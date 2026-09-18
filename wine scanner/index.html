@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Wine Scanner</title>
+  <meta name="description" content="Photograph a wine label and get the closest matching wines with a match percentage.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍷%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>🍷 Wine Scanner</h1>
+    <p class="tagline">Photograph a label, get the closest wines from the database with a match percentage.</p>
+  </header>
+
+  <main>
+    <section class="card" id="capture">
+      <input type="file" id="file" accept="image/*" capture="environment" hidden>
+      <input type="file" id="file-pick" accept="image/*" hidden>
+      <div class="actions">
+        <button type="button" class="primary" id="btn-camera">📷 Take a photo</button>
+        <button type="button" id="btn-pick">🖼️ Choose an image</button>
+      </div>
+      <div class="dropzone" id="dropzone" tabindex="0" aria-label="Drop a label photo here">
+        <img id="preview" alt="" hidden>
+        <span id="drop-hint">…or drop / paste a photo here</span>
+      </div>
+      <div class="progress" id="progress" hidden>
+        <div class="bar"><div class="fill" id="progress-fill"></div></div>
+        <span id="status" role="status" aria-live="polite">Loading…</span>
+      </div>
+      <p class="error" id="error" hidden></p>
+    </section>
+
+    <section class="card" id="results-card" hidden>
+      <div class="card-head">
+        <h2>Matches</h2>
+        <span class="muted" id="results-meta"></span>
+      </div>
+      <ol class="results" id="results"></ol>
+      <p class="muted" id="no-results" hidden>No wine in the database resembles this label. Try a sharper photo, or edit the recognized text below.</p>
+    </section>
+
+    <section class="card">
+      <details id="text-details">
+        <summary>Recognized text <span class="muted">(edit and search again)</span></summary>
+        <textarea id="ocr-text" rows="6" placeholder="Type the producer, cuvée, region and year as printed on the label…"></textarea>
+        <div class="actions">
+          <button type="button" class="primary" id="btn-search">🔍 Search this text</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <details id="settings">
+        <summary>Settings</summary>
+        <div class="settings-grid">
+          <label>OCR languages
+            <span class="checks" id="langs">
+              <label><input type="checkbox" name="lang" value="eng" checked> English</label>
+              <label><input type="checkbox" name="lang" value="fra"> French</label>
+              <label><input type="checkbox" name="lang" value="ita"> Italian</label>
+              <label><input type="checkbox" name="lang" value="spa"> Spanish</label>
+              <label><input type="checkbox" name="lang" value="deu"> German</label>
+              <label><input type="checkbox" name="lang" value="por"> Portuguese</label>
+            </span>
+          </label>
+          <label><input type="checkbox" id="opt-invert" checked> Also scan an inverted copy (light text on dark labels)</label>
+          <label>Results to show <input type="number" id="opt-topn" min="1" max="50" value="10"></label>
+        </div>
+        <p class="muted small">Everything runs in your browser: the photo never leaves your device. The OCR engine (~10 MB) is downloaded once and cached.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <p id="db-info" class="muted small">Loading wine database…</p>
+    <p class="muted small">OCR by <a href="https://github.com/naptha/tesseract.js" rel="noopener">Tesseract.js</a>. Data from
+      <a href="https://github.com/alfredodeza/wine-ratings" rel="noopener">alfredodeza/wine-ratings</a> and
+      <a href="https://github.com/rogerioxavier/X-Wines" rel="noopener">X-Wines</a> (de Azambuja et al., 2023).</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

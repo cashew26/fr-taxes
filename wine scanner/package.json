@@ -1,0 +1,24 @@
+{
+  "name": "wine-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Photograph a wine label and get matching wines with a match percentage. Static web app: Tesseract.js OCR in the browser + fuzzy matching against a bundled wine database.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "build-db": "python3 scripts/build_db.py",
+    "vendor": "node scripts/vendor.mjs",
+    "eval": "node test/eval.mjs"
+  },
+  "devDependencies": {
+    "@tesseract.js-data/deu": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "@tesseract.js-data/ita": "^1.0.0",
+    "@tesseract.js-data/por": "^1.0.0",
+    "@tesseract.js-data/spa": "^1.0.0",
+    "jimp": "^1.6.0",
+    "playwright": "^1.50.0",
+    "tesseract.js": "^7.0.0"
+  }
+}

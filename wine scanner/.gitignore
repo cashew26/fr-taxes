@@ -1,0 +1,5 @@
+node_modules/
+vendor/
+scripts/.cache/
+test/.cache/
+test/screenshots/
