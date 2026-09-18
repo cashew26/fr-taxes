@@ -33,6 +33,7 @@ try {
   fs.mkdirSync(path.join(root, 'test/screenshots'), { recursive: true });
   for (const img of images) {
     const t0 = Date.now();
+    await page.evaluate(() => { document.getElementById('results-card').hidden = true; });
     await page.setInputFiles('#file-pick', img);
     await page.waitForFunction(() => !document.getElementById('results-card').hidden && document.getElementById('progress').hidden, null, { timeout: 180000 });
     const err = await page.$eval('#error', (e) => e.hidden ? '' : e.textContent);

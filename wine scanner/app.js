@@ -111,38 +111,22 @@ async function decodeImage(file) {
   } finally { URL.revokeObjectURL(url); }
 }
 
-/** Returns [normal, inverted] canvases: resized, grayscale, contrast-stretched. */
+/**
+ * Returns [normal, inverted] canvases. The photo is only downscaled (long side <= MAX_SIDE) to
+ * keep OCR fast; on the X-Wines label photos, grayscale / contrast stretching and upscaling
+ * made recognition worse, so the pixels are otherwise left untouched.
+ */
 async function preprocess(file, withInverted) {
   const bmp = await decodeImage(file);
   const w = bmp.width || bmp.naturalWidth; const h = bmp.height || bmp.naturalHeight;
-  const scale = MAX_SIDE / Math.max(w, h);
+  const scale = Math.min(1, MAX_SIDE / Math.max(w, h));
   const cw = Math.max(1, Math.round(w * scale)); const ch = Math.max(1, Math.round(h * scale));
   const canvas = document.createElement('canvas');
   canvas.width = cw; canvas.height = ch;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const ctx = canvas.getContext('2d');
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(bmp, 0, 0, cw, ch);
   if (bmp.close) bmp.close();
-
-  const img = ctx.getImageData(0, 0, cw, ch);
-  const d = img.data;
-  const hist = new Uint32Array(256);
-  const gray = new Uint8ClampedArray(cw * ch);
-  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-    const g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000;
-    gray[p] = g; hist[g | 0]++;
-  }
-  // Contrast stretch between the 1st and 99th percentiles.
-  const total = cw * ch; let lo = 0; let hi = 255; let acc = 0;
-  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= total * 0.01) { lo = v; break; } }
-  acc = 0;
-  for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= total * 0.01) { hi = v; break; } }
-  const range = Math.max(1, hi - lo);
-  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-    const g = Math.max(0, Math.min(255, ((gray[p] - lo) * 255) / range));
-    d[i] = d[i + 1] = d[i + 2] = g; d[i + 3] = 255;
-  }
-  ctx.putImageData(img, 0, 0);
   const out = [canvas];
   if (withInverted) {
     const inv = document.createElement('canvas');

@@ -16,17 +16,19 @@ const labelsDir = args.labels || path.join(cache, 'XWines_Test_100_labels');
 const csvFile = args.csv || path.join(cache, 'XWines_Test_100_wines.csv');
 const lang = args.lang || 'eng';
 const verbose = !!args.verbose;
-// Preprocessing variant, mirrors app.js: none | gray | both (gray + inverted pass)
-const pre = args.pre || 'both';
-const psm = args.psm || '3';
-const target = Number(args.size || 1800);
+// Preprocessing variant. The app does 'raw': downscale only (never upscale); 'rawboth' adds an inverted pass.
+// Other variants kept for experiments: raw (single pass), gray / both (grayscale + contrast stretch).
+const pre = args.pre || 'raw';
+const psm = args.psm || '11';
+const target = Number(args.size ?? 1800);   // long side; 0 = keep original size
+const upscale = !!args.upscale;
 
 async function variants(file) {
   if (pre === 'none') return [fs.readFileSync(file)];
   const im = await Jimp.read(file);
   if (target > 0) {
     const scale = target / Math.max(im.width, im.height);
-    im.resize({ w: Math.round(im.width * scale), h: Math.round(im.height * scale) });
+    if (scale < 1 || upscale) im.resize({ w: Math.round(im.width * scale), h: Math.round(im.height * scale) });
   }
   if (pre !== 'raw' && pre !== 'rawboth') im.greyscale().normalize();
   const out = [await im.getBuffer('image/png')];
@@ -52,7 +54,7 @@ function parseCsv(text) {
 const expected = parseCsv(fs.readFileSync(csvFile, 'utf8'));
 
 // --- OCR (cached) ---------------------------------------------------------------------
-const cacheFile = `test/.cache/ocr2-${lang}-${pre}-psm${psm}-${target}.json`;
+const cacheFile = `test/.cache/ocr2-${lang}-${pre}-psm${psm}-${upscale ? 'up' : 'max'}${target}.json`;
 const minConf = Number(args.minconf ?? 0);
 const matchOpts = Object.fromEntries((args.opt ? String(args.opt).split(',') : []).map((kv) => { const [k, v] = kv.split('='); return [k, Number(v)]; }));
 let ocr = fs.existsSync(cacheFile) && !args.refresh ? JSON.parse(fs.readFileSync(cacheFile, 'utf8')) : {};
@@ -109,6 +111,6 @@ for (const w of expected) {
   }
 }
 const avg = (a) => (a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : '-');
-console.log(`\nlang=${lang} pre=${pre} psm=${psm} size=${target} minconf=${minConf} opts=${JSON.stringify(matchOpts)}  wines=${db.wines.length}  index build ${buildMs} ms, match avg ${(ms / n).toFixed(1)} ms`);
+console.log(`\nlang=${lang} pre=${pre} psm=${psm} size=${upscale ? 'up' : 'max'}${target} minconf=${minConf} opts=${JSON.stringify(matchOpts)}  wines=${db.wines.length}  index build ${buildMs} ms, match avg ${(ms / n).toFixed(1)} ms`);
 console.log(`n=${n}  top1=${top1} (${(100 * top1 / n).toFixed(0)}%)  top5=${top5}  top10=${top10}  not in top10=${none}`);
 console.log(`avg % shown: correct top-1 ${avg(pcts.hit)}, wrong top-1 ${avg(pcts.miss)}`);

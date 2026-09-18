@@ -34,12 +34,14 @@ When `vendor/tesseract/` exists the page uses it instead of the CDN. `vendor/` i
 
 ## How matching works
 
-1. **Preprocessing** (`app.js`): EXIF orientation is applied, the image is resized to 1800 px
-   on its long side, converted to grayscale and contrast-stretched. A second, inverted copy is
-   also read because many labels print light text on a dark background (can be disabled in
-   Settings).
-2. **OCR**: Tesseract in "sparse text" page segmentation mode, since labels are scattered words,
-   not paragraphs. Words with a confidence below 40 are dropped.
+1. **Preprocessing** (`app.js`): EXIF orientation is applied and the image is downscaled to
+   1800 px on its long side. Settings offers a second pass on an inverted copy for light text
+   on dark labels; it is off by default because it doubles the time without improving the
+   benchmark below. Grayscale conversion, contrast stretching and upscaling were also tried
+   and made recognition worse on the test labels.
+2. **OCR**: Tesseract in "sparse text" page segmentation mode (labels are scattered words, not
+   paragraphs). All words are kept: filtering on Tesseract's confidence also lost too many real
+   words set in decorative fonts.
 3. **Matching** (`matcher.js`): each wine is a small document (producer + name, region,
    variety). Words are lowercased, accents stripped and weighted by inverse document frequency,
    so a rare producer name counts far more than "cabernet". Label words may differ from the
@@ -52,9 +54,10 @@ When `vendor/tesseract/` exists the page uses it instead of the CDN. `vendor/` i
    - the vintage: a year on the label that differs from the wine's vintage lowers the score,
    so the right vintage of a wine ranks first.
 
-   The result is displayed as a percentage. Above roughly 70% the top result is usually right;
-   below 45% treat it as a hint and check the "Recognized text" box, which can be edited and
-   searched again (it also works as a plain text search without a photo).
+   The result is displayed as a percentage. Above roughly 60% the top result is usually right;
+   below 40% treat it as a hint and check the "Recognized text" box, which can be edited and
+   searched again (it also works as a plain text search without a photo). Vintages of the same
+   wine are grouped into one row.
 
 ## Database
 
@@ -86,14 +89,26 @@ among the 30,894 wines:
 
 ```sh
 npm install
-npm run eval                 # OCR the 100 labels once, then score
-node test/eval.mjs --verbose --pre both --psm 11 --minconf 40
+npm run eval                 # OCR the 100 labels once (cached), then score
+node test/eval.mjs --verbose                    # print the misses
+node test/eval.mjs --pre both --psm 3 --size 1800 --upscale --opt queryWeight=0.5   # experiments
 ```
 
 `test/e2e.mjs` drives the real page in headless Chromium (Playwright) with a few label photos
 and saves screenshots in `test/screenshots/`.
 
-See the bottom of this file for the current numbers.
+Current numbers (English language pack, 30,894 wines, 100 label photos of 480×640 px):
+
+| Setting | Expected wine ranked 1st | In top 5 | In top 10 |
+|---|---|---|---|
+| App defaults (sparse text mode, original colours) | 52% | 61% | 63% |
+| Same plus an inverted pass (`--pre rawboth`) | 52% | 61% | 63% |
+| Automatic page segmentation instead of sparse text | 38% | 46% | 47% |
+| Grayscale + contrast stretch + upscale to 1800 px | 51% | 54% | 56% |
+
+When the right wine is ranked first it is shown with 64% on average; a wrong first result
+averages 45%. The wines that are never found are those whose OCR output is unusable (foil or
+engraved lettering, script fonts, very low contrast): the matcher cannot recover what was not read.
 
 ## Limits
 
