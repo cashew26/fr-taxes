@@ -167,16 +167,17 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-b
     <li>Épargne retraite : plafond de déduction minimal 4 710 €, maximal 37 680 € (PASS 2025 = 47 100 €).</li>
     <li>Contribution exceptionnelle sur les hauts revenus : 3 % puis 4 % au-delà de 250 000 € / 500 000 € (doublés pour un couple). Contribution différentielle (CDHR) : imposition minimale de 20 % du RFR au-delà des mêmes seuils, avec décote jusqu'à 330 000 € / 660 000 €.</li>
     <li>PFU 12,8 % (7,5 % pour l'assurance-vie de plus de 8 ans, primes ≤ 150 000 €) ; prélèvements sociaux sur revenus du patrimoine 17,2 % ; CSG déductible 6,8 %. Seuil de mise en recouvrement : 61 €.</li>
+    <li>Dons aux organismes d'aide aux personnes en difficulté : 75 % dans la limite de 1 000 € pour les dons versés jusqu'au 13 octobre 2025 (7UD) et de 2 000 € au total pour les dons versés à compter du 14 octobre 2025 (7UQ), loi de finances pour 2026, art. 9.</li>
     <li>Plafonnement global des avantages fiscaux : 10 000 € (18 000 € avec Sofica / outre-mer).</li>
   </ul>
-  Ce simulateur reproduit la mécanique de liquidation de l'impôt décrite dans la brochure pratique 2026 et le BOFiP (BOI-IR-LIQ). Il ne remplace pas l'avis d'imposition ; certaines situations rares (revenus de source étrangère complexes, plus-values professionnelles, lissage de la CEHR, reports de déficits pluriannuels…) sont traitées de façon simplifiée. Les données saisies restent dans votre navigateur.
+  Tous ces montants sont modifiables dans la rubrique « Paramètres annuels » en bas du formulaire (et regroupés dans l'objet <code>DEFAULT_PARAMS</code> du code). Ce simulateur reproduit la mécanique de liquidation de l'impôt décrite dans la brochure pratique 2026 et le BOFiP (BOI-IR-LIQ). Il ne remplace pas l'avis d'imposition ; certaines situations rares (revenus de source étrangère complexes, plus-values professionnelles, lissage de la CEHR, reports de déficits pluriannuels…) sont traitées de façon simplifiée. Les données saisies restent dans votre navigateur.
 </footer>
 <script>
 // ===ENGINE START===
 // Paramètres applicables à l'imposition des revenus 2025 (déclaration 2026).
 // Sources : loi n° 2026-103 du 19 février 2026 de finances pour 2026 (art. 4, indexation 0,9 %),
 // CGI art. 156, 157 bis, 158, 194 à 197, 200 et suivants, 223 sexies, 1417 ; brochure pratique IR 2026 ; BOI-IR-LIQ ; BOI-IR-CDHR.
-const PARAMS = {
+const DEFAULT_PARAMS = {
   annee: 2025,
   bareme: [[11600, 0], [29579, 0.11], [84577, 0.30], [181917, 0.41], [Infinity, 0.45]],
   qf: { demi: 1807, quart: 904, parentIsole: 4262, parentIsoleQuart: 2131, caseL: 1079, complInvalide: 1801, complInvalideQuart: 900, complVeuf: 2011 },
@@ -202,7 +203,7 @@ const PARAMS = {
   dom: { GMR: { taux: 0.30, plafond: 2450 }, GY: { taux: 0.40, plafond: 4050 } },
   seuilRecouvrement: 61,
   ri: {
-    dons75: { taux: 0.75, plafond: 1000 }, dons66: { taux: 0.66, partRevenu: 0.20 }, donsPartis: { plafond: 15000 }, patrimoine: { taux: 0.75, plafond: 1000 },
+    dons75: { taux: 0.75, plafond: 1000, plafondFinAnnee: 2000 }, dons66: { taux: 0.66, partRevenu: 0.20 }, donsPartis: { plafond: 15000 }, patrimoine: { taux: 0.75, plafond: 1000 },
     syndicat: 0.66,
     garde: { taux: 0.50, plafond: 3500, plafondAlternee: 1750 },
     domicile: { taux: 0.50, base: 12000, majoration: 1500, majorationAlternee: 750, max: 15000, premiereAnnee: 15000, premiereAnneeMax: 18000, invalide: 20000 },
@@ -219,6 +220,18 @@ const PARAMS = {
     plafondNiches: 10000, plafondNiches18: 18000
   }
 };
+
+function deepClone(o) { if (Array.isArray(o)) return o.map(deepClone); if (o && typeof o === "object") { const r = {}; for (const k in o) r[k] = deepClone(o[k]); return r; } return o; }
+const PARAMS = deepClone(DEFAULT_PARAMS);
+function getPath(o, path) { return path.split(".").reduce((a, k) => (a == null ? undefined : a[k]), o); }
+function setPath(o, path, val) { const ks = path.split("."); let c = o; for (let i = 0; i < ks.length - 1; i++) c = c[ks[i]]; c[ks[ks.length - 1]] = val; }
+// Applique les valeurs personnalisées (objet {chemin: valeur}) sur les paramètres par défaut.
+function applyParamOverrides(ov) {
+  const fresh = deepClone(DEFAULT_PARAMS);
+  for (const k in PARAMS) delete PARAMS[k];
+  Object.assign(PARAMS, fresh);
+  if (ov) for (const path in ov) { const val = ov[path]; if (val === "" || val == null || !isFinite(Number(val))) continue; if (getPath(PARAMS, path) !== undefined) setPath(PARAMS, path, Number(val)); }
+}
 
 function num(x) {
   if (x === true) return 1; if (x === false || x == null) return 0;
@@ -357,8 +370,10 @@ function compute(v) {
     const capDef = v["4BCenergie"] ? P.deficitFoncier.plafondEnergie : P.deficitFoncier.plafond;
     rfDeficitRG = Math.min(g("4BC"), capDef);
     if (g("4BC") > capDef) warnings.push({ code: "4BC", msg: `Le déficit foncier imputable sur le revenu global est limité à ${fmt(capDef)} (case 4BC) ; le surplus est reportable sur les revenus fonciers des 10 années suivantes.` });
+    if (g("4BL") > ba) warnings.push({ code: "4BL", msg: "Le montant 4BL est un « dont » de la case 4BA : il ne peut pas lui être supérieur." });
   } else {
     const be = g("4BE");
+    if (g("4BK") > be) warnings.push({ code: "4BK", msg: "Le montant 4BK est un « dont » de la case 4BE : il ne peut pas lui être supérieur." });
     if (be > P.microFoncier.plafond) errors.push({ code: "4BE", msg: `Le micro-foncier n'est possible que jusqu'à ${fmt(P.microFoncier.plafond)} de revenus bruts : déclarez au régime réel (2044).` });
     rfNet = be * (1 - P.microFoncier.abt);
   }
@@ -371,11 +386,13 @@ function compute(v) {
     ["5ND", "5OD", "5PD", P.micro.meuble, "np"], ["5NG", "5OG", "5PG", P.micro.tourismeClasse, "np"], ["5NW", "5OW", "5PW", P.micro.tourismeNonClasse, "np"],
     ["5HQ", "5IQ", "5JQ", P.micro.bnc, "bnc"], ["5XB", "5YB", "5ZB", P.micro.ba, "ba"]
   ];
+  const moisActivite = [clamp(num(v["5CD"]) || 12, 1, 12), clamp(num(v["5DD"]) || 12, 1, 12), 12];
   microCodes.forEach(([a, b, c, prm, kind]) => {
     [a, b, c].forEach((code, i) => {
       if (i === 1 && !couple) return;
       const brut = g(code); if (brut <= 0) return;
-      if (brut > prm.plafond) warnings.push({ code, msg: `Recettes supérieures au plafond du régime micro (${fmt(prm.plafond)}) : le régime réel s'applique en principe.` });
+      const plafondProrata = R(prm.plafond * moisActivite[i] / 12);
+      if (brut > plafondProrata) warnings.push({ code, msg: `Recettes supérieures au plafond du régime micro (${fmt(plafondProrata)}${moisActivite[i] < 12 ? ", prorata sur " + moisActivite[i] + " mois" : ""}) : le régime réel s'applique en principe.` });
       const n = microNet(brut, prm.abt);
       if (kind === "np") bicNonPro += n; else if (kind === "bnc") bnc += n; else if (kind === "ba") ba_ += n; else bicPro += n;
     });
@@ -388,7 +405,8 @@ function compute(v) {
   bicPro += reel("5KC", "5LC"); deficitsPro += reel("5KF", "5LF");
   bicNonPro += reel("5NA", "5OA"); const deficitLMNP = reel("5NY", "5OY");
   bnc += reel("5QC", "5RC"); deficitsPro += reel("5QE", "5RE");
-  ba_ += reel("5HC", "5IC"); deficitsPro += reel("5HF", "5IF");
+  ba_ += reel("5HC", "5IC") + reel("5HD", "5ID"); deficitsPro += reel("5HF", "5IF");
+  const revenusPS = reel("5HY", "5IY") + g("5JY");
   const bicNonProNet = Math.max(0, bicNonPro - deficitLMNP);
   if (deficitLMNP > bicNonPro) warnings.push({ code: "5NY", msg: "Le déficit de location meublée non professionnelle n'est imputable que sur les bénéfices de même nature (10 ans), pas sur le revenu global." });
 
@@ -418,9 +436,11 @@ function compute(v) {
   const paAutres = g("6EL") + g("6EM");
   const accueil = Math.min(g("6EU"), P.forfaitAccueil * Math.max(1, num(v["6EV"]) || 1));
   const perPlafondA = num(v["6PS"]) || P.per.min, perPlafondB = num(v["6PT"]) || P.per.min;
-  const per = Math.min(g("6RS"), perPlafondA + num(v["6QS"])) + (couple ? Math.min(g("6RT"), perPlafondB + num(v["6QT"])) : 0) + g("6RU");
+  const perA = g("6NS") + g("6RS"), perB = couple ? g("6NT") + g("6RT") : 0;
+  const per = Math.min(perA, perPlafondA + num(v["6QS"])) + Math.min(perB, perPlafondB + num(v["6QT"])) + g("6NU") + g("6RU");
   ["6GI", "6GJ"].forEach(c => { if (g(c) > capPA) warnings.push({ code: c, msg: `Pension alimentaire plafonnée à ${fmt(capPA)} par enfant majeur.` }); });
-  if (g("6RS") > perPlafondA + num(v["6QS"])) warnings.push({ code: "6RS", msg: `Versements PER limités au plafond disponible (${fmt(perPlafondA + num(v["6QS"]))}, case 6PS + reports).` });
+  if (perA > perPlafondA + num(v["6QS"])) warnings.push({ code: "6NS", msg: `Versements d'épargne retraite (6NS + 6RS) limités au plafond disponible (${fmt(perPlafondA + num(v["6QS"]))}, case 6PS + reports 6QS).` });
+  if (perB > perPlafondB + num(v["6QT"])) warnings.push({ code: "6NT", msg: `Versements d'épargne retraite (6NT + 6RT) limités au plafond disponible (${fmt(perPlafondB + num(v["6QT"]))}, case 6PT + reports 6QT).` });
   const charges = csgDed + pa6GI + pa6GJ + pa6GP + pa6GU + paAutres + accueil + per + g("6DD");
   const rng = Math.max(0, rbgPos - charges);
 
@@ -436,7 +456,7 @@ function compute(v) {
   const rni = Math.floor(Math.max(0, rng - abtAge - abtMarie));
 
   // ---------- Impôt brut : barème, quotient, taux effectif, plafonnement QF ----------
-  const exo = g("8TI") + vlNet;                    // revenus exonérés retenus pour le taux effectif
+  const exo = g("8TI") + g("4EA") + vlNet;         // revenus exonérés retenus pour le taux effectif (8TI, 4EA, versement libératoire)
   const excep = Math.min(g("0XX"), rni);           // revenus exceptionnels (système du quotient, coefficient 4)
   const ordinaire = rni - excep;
   const ds = (x) => droitsSimples(x, qf);
@@ -472,8 +492,10 @@ function compute(v) {
   const ri = P.ri, reductions = [], plafonnees10 = [], plafonnees18 = [];
   const addRI = (label, amount, cap) => { amount = R(Math.max(0, amount)); if (amount) { reductions.push([label, amount]); if (cap === 10) plafonnees10.push(amount); if (cap === 18) plafonnees18.push(amount); } };
   // Dons
-  const d75 = Math.min(g("7UD"), ri.dons75.plafond);
-  const dons66Base = Math.max(0, g("7UD") - ri.dons75.plafond) + g("7UF") + Math.min(g("7UH"), ri.donsPartis.plafond) + g("7XS") + g("7XT") + g("7XU") + g("7XW") + g("7XY");
+  const d75UD = Math.min(g("7UD"), ri.dons75.plafond);
+  const d75UQ = Math.min(g("7UQ"), Math.max(0, ri.dons75.plafondFinAnnee - d75UD));
+  const d75 = d75UD + d75UQ;
+  const dons66Base = (g("7UD") - d75UD) + (g("7UQ") - d75UQ) + g("7UF") + Math.min(g("7UH"), ri.donsPartis.plafond) + g("7XS") + g("7XT") + g("7XU") + g("7XW") + g("7XY");
   const capDons = rni * ri.dons66.partRevenu;
   const d66 = Math.min(dons66Base, capDons);
   if (dons66Base > capDons) warnings.push({ code: "7UF", msg: `Dons retenus dans la limite de 20 % du revenu imposable (${fmt(capDons)}) ; l'excédent (${fmt(dons66Base - capDons)}) est reportable 5 ans.` });
@@ -546,7 +568,8 @@ function compute(v) {
   addCI("Prélèvement forfaitaire non libératoire déjà versé (2CK)", g("2CK"));
   addCI("Crédit d'impôt sur revenus de valeurs mobilières étrangères (2AB)", g("2AB"));
   addCI("Crédit d'impôt égal à l'impôt étranger (8VL)", g("8VL"));
-  if (g("8TK") > 0 && rni > 0) addCI("Crédit d'impôt égal à l'impôt français sur les revenus étrangers (8TK)", irApresRI * Math.min(1, g("8TK") / rni));
+  const revEtrangersCredit = Math.max(g("8TK"), (v.regimeFoncier === "reel" ? g("4BL") : g("4BK")) * (v.regimeFoncier === "reel" ? 1 : 1 - P.microFoncier.abt));
+  if (revEtrangersCredit > 0 && rni > 0) addCI("Crédit d'impôt égal à l'impôt français sur les revenus étrangers (8TK / 4BL / 4BK)", irApresRI * Math.min(1, revEtrangersCredit / rni));
   addCI("Autres crédits d'impôt", g("CI_AUTRE"));
   const totalCI = credits.reduce((a, b) => a + b[1], 0);
 
@@ -555,7 +578,7 @@ function compute(v) {
   const excesNiches = Math.max(0, a10 - ri.plafondNiches) + Math.max(0, Math.min(a10, ri.plafondNiches) + a18 - ri.plafondNiches18);
 
   // ---------- RFR ----------
-  const rfr = rni + abtDiv + rcmPFU + ww + (optBareme ? 0 : pvNette) + abtPV + g("3VZ") + heuresSupExo + g("8TI") + per + g("2DH") + g("2EE") + vlNet + g("8TK") * 0;
+  const rfr = rni + abtDiv + rcmPFU + ww + (optBareme ? 0 : pvNette) + abtPV + g("3VZ") + heuresSupExo + g("8TI") + g("4EA") + per + g("2DH") + g("2EE") + vlNet;
 
   // ---------- CEHR (CGI 223 sexies) ----------
   const k = couple ? 2 : 1;
@@ -583,10 +606,10 @@ function compute(v) {
 
   // ---------- Prélèvements sociaux sur les revenus du patrimoine ----------
   const psBaseBareme = rfNet + rentesNettes + bicNonProNet + (optBareme ? rcmTotal - g("2BH") - ch - ww - zz + pvNette : 0);
-  const psBase = rfNet + rentesNettes + bicNonProNet + g("2CG") + pvNette + (optBareme ? 0 : 0);
+  const psBase = rfNet + rentesNettes + bicNonProNet + revenusPS + g("2CG") + pvNette;
   let ps = R(psBase * P.ps.taux);
   if (ps > 0 && ps < P.seuilRecouvrement) ps = 0;
-  const csgDeductibleProchaine = R((rfNet + rentesNettes + bicNonProNet + (optBareme ? g("2BH") + g("2CG") + pvNette : 0)) * P.ps.csgDeductible);
+  const csgDeductibleProchaine = R((rfNet + rentesNettes + bicNonProNet + revenusPS + (optBareme ? g("2BH") + g("2CG") + pvNette : 0)) * P.ps.csgDeductible);
 
   // ---------- Solde ----------
   const pasVerse = g("8HV") + g("8IV") + g("8HW") + g("8IW") + g("8HX") + g("8IX") + g("8HY") + g("8HZ") + g("8HU");
@@ -605,6 +628,7 @@ function compute(v) {
   if (v.caseT && !couple && !qf.veuf && qf.nDep === 0) warnings.push({ code: "caseT", msg: "La case T suppose au moins une personne à charge." });
   if (v.caseL && qf.nDep > 0) warnings.push({ code: "caseL", msg: "La case L n'est accordée qu'en l'absence de personne à charge." });
   if (g("7UD") > ri.dons75.plafond) warnings.push({ code: "7UD", msg: `Au-delà de ${fmt(ri.dons75.plafond)}, l'excédent des dons 7UD est retenu au taux de 66 % (comme en 7UF).` });
+  if (g("7UQ") > ri.dons75.plafondFinAnnee - d75UD) warnings.push({ code: "7UQ", msg: `Les dons 7UQ sont retenus à 75 % dans la limite de ${fmt(ri.dons75.plafondFinAnnee)} diminuée des dons 7UD retenus (${fmt(d75UD)}) ; l'excédent est retenu à 66 %.` });
   if (g("0XX") > rni) warnings.push({ code: "0XX", msg: "Les revenus exceptionnels ne peuvent pas dépasser le revenu net imposable." });
 
   // Comparaison PFU / barème (l'administration signale l'option la plus favorable)
@@ -708,13 +732,17 @@ const SECTIONS = [
   { id: "s4", n: "4", title: "Revenus fonciers", form: "2042 p. 3 / 2044", rows: [
     { type: "radio", code: "regimeFoncier", label: "Régime d'imposition", options: [["micro", "Micro-foncier (recettes ≤ 15 000 €, abattement 30 %)"], ["reel", "Régime réel (déclaration 2044)"]] },
     { type: "money", code: "4BE", label: "Recettes brutes sans abattement (micro-foncier)", show: (c) => c.v.regimeFoncier !== "reel" },
+    { type: "money", code: "4BK", label: "… dont recettes de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français", show: (c) => c.v.regimeFoncier !== "reel" && num(c.v["4BE"]) > 0, hint: "Crédit d'impôt calculé sur ces revenus (et exclusion de l'acompte de prélèvement à la source)." },
     { type: "money", code: "4BA", label: "Revenus fonciers nets imposables (2044, ligne 420)", show: (c) => c.v.regimeFoncier === "reel" },
+    { type: "money", code: "4BL", label: "… dont revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français", show: (c) => c.v.regimeFoncier === "reel" && num(c.v["4BA"]) > 0, hint: "Inclus dans 4BA. Crédit d'impôt égal à l'impôt français correspondant." },
     { type: "money", code: "4BB", label: "Déficit imputable sur les revenus fonciers des années suivantes (2044, ligne 432)", show: (c) => c.v.regimeFoncier === "reel", hint: "Sans effet sur l'impôt de cette année (report 10 ans)." },
     { type: "money", code: "4BC", label: "Déficit imputable sur le revenu global (2044, ligne 431)", show: (c) => c.v.regimeFoncier === "reel", hint: "Limité à 10 700 € (21 400 € pour des travaux de rénovation énergétique)." },
     { type: "check", code: "4BCenergie", label: "Le déficit provient de travaux de rénovation énergétique (plafond porté à 21 400 €)", show: (c) => c.v.regimeFoncier === "reel" && num(c.v["4BC"]) > 0 },
     { type: "money", code: "4BD", label: "Déficits fonciers antérieurs non encore imputés (2044, ligne 451)", show: (c) => c.v.regimeFoncier === "reel" },
+    { type: "money", code: "4EA", label: "Revenus fonciers de source étrangère exonérés, retenus pour le calcul du taux effectif", hint: "Revenus imposables à l'étranger (Belgique, Pays-Bas, Irlande…) : non imposés en France mais pris en compte pour le taux effectif et le RFR." },
   ]},
   { id: "s5", n: "5", title: "Revenus des professions non salariées", form: "2042-C-PRO", persons: 2, intro: "BIC, BNC et bénéfices agricoles. Saisissez les recettes brutes en régime micro (l'abattement forfaitaire, minimum 305 €, est appliqué) ou le résultat en régime réel.", rows: [
+    { type: "int", codes: ["5CD", "5DD"], label: "Durée de l'exercice : nombre de mois d'activité si inférieur à 12 (création ou cessation en 2025)", hint: "Sert à proratiser les plafonds du régime micro." },
     { type: "group", label: "Régime micro-BIC" },
     { type: "money", codes: ["5KO", "5LO"], label: "Ventes de marchandises, fourniture de logement (abattement 71 %)" },
     { type: "money", codes: ["5KP", "5LP"], label: "Prestations de services et locations meublées professionnelles (50 %)" },
@@ -736,7 +764,10 @@ const SECTIONS = [
     { type: "money", codes: ["5QC", "5RC"], label: "BNC professionnels : bénéfice" },
     { type: "money", codes: ["5QE", "5RE"], label: "BNC professionnels : déficit" },
     { type: "money", codes: ["5HC", "5IC"], label: "Bénéfices agricoles (régime réel) : bénéfice" },
+    { type: "money", codes: ["5HD", "5ID"], label: "Revenu forfaitaire provenant des coupes de bois (forfait forestier)" },
     { type: "money", codes: ["5HF", "5IF"], label: "Bénéfices agricoles : déficit" },
+    { type: "group", label: "Revenus à imposer aux prélèvements sociaux" },
+    { type: "money", codes: ["5HY", "5IY"], label: "Revenus nets non professionnels (BA, BIC, BNC) non encore soumis aux prélèvements sociaux", hint: "Prélèvements sociaux de 17,2 % sur l'avis. Ne pas y reporter les locations meublées non professionnelles : elles sont soumises automatiquement." },
   ]},
   { id: "s6", n: "6", title: "Charges déductibles du revenu global", form: "2042 p. 4", rows: [
     { type: "money", code: "6DE", label: "CSG déductible calculée sur les revenus du patrimoine (pré-remplie)" },
@@ -753,13 +784,15 @@ const SECTIONS = [
     { type: "money", code: "6DD", label: "Déductions diverses (rachats de cotisations, versements aux monuments historiques…)" },
     { type: "money", code: "6FL", label: "Déficits globaux des années antérieures non encore déduits" },
     { type: "group", label: "Épargne retraite (PER, PERP, Préfon, COREM…)" },
-    { type: "money", codes: ["6RS", "6RT", "6RU"], label: "Cotisations et versements déductibles" },
+    { type: "money", codes: ["6NS", "6NT", "6NU"], label: "Versements sur les plans d'épargne retraite (PER individuel, PER d'entreprise – compartiment individuel)" },
+    { type: "money", codes: ["6RS", "6RT", "6RU"], label: "Cotisations PERP, Préfon, COREM, CGOS et assimilées" },
     { type: "money", codes: ["6PS", "6PT"], label: "Plafond de déduction 2025 (figure sur votre avis ; à défaut 4 710 €)", hint: "10 % des revenus d'activité 2024, entre 4 710 € et 37 680 €." },
     { type: "money", codes: ["6QS", "6QT"], label: "Plafonds non utilisés des années 2022 à 2024" },
   ]},
   { id: "s7", n: "7", title: "Réductions et crédits d'impôt", form: "2042-RICI / 2042-C", rows: [
     { type: "group", label: "Dons" },
-    { type: "money", code: "7UD", label: "Dons aux organismes d'aide aux personnes en difficulté (75 % jusqu'à 1 000 €)" },
+    { type: "money", code: "7UD", label: "Dons aux organismes d'aide aux personnes en difficulté versés du 1er janvier au 13 octobre 2025 (75 % jusqu'à 1 000 €)" },
+    { type: "money", code: "7UQ", label: "Dons aux organismes d'aide aux personnes en difficulté versés du 14 octobre au 31 décembre 2025 (75 % ; plafond global porté à 2 000 €)", hint: "Loi de finances pour 2026, art. 9 : plafond de 2 000 € pour les dons versés à compter du 14 octobre 2025, diminué des dons 7UD retenus." },
     { type: "money", code: "7UF", label: "Autres dons aux organismes d'intérêt général (66 %, dans la limite de 20 % du revenu imposable)" },
     { type: "money", code: "7UH", label: "Dons et cotisations aux partis politiques (66 %, plafond 15 000 €)" },
     { type: "money", code: "7UJ", label: "Dons pour la sauvegarde du patrimoine religieux – Fondation du patrimoine (75 % jusqu'à 1 000 €)" },
@@ -824,6 +857,136 @@ const SECTIONS = [
   ]},
 ];
 
+// ===================== Paramètres annuels modifiables =====================
+// Chaque entrée : [groupe, chemin dans PARAMS, libellé, type] — type : "eur", "pct", "int", "year".
+const PARAM_DEFS = [
+  ["Barème progressif (par part)", "bareme.0.0", "Limite de la tranche à 0 %", "eur"],
+  ["Barème progressif (par part)", "bareme.1.0", "Limite de la tranche à 11 %", "eur"],
+  ["Barème progressif (par part)", "bareme.2.0", "Limite de la tranche à 30 %", "eur"],
+  ["Barème progressif (par part)", "bareme.3.0", "Limite de la tranche à 41 %", "eur"],
+  ["Barème progressif (par part)", "bareme.1.1", "Taux de la 2e tranche", "pct"],
+  ["Barème progressif (par part)", "bareme.2.1", "Taux de la 3e tranche", "pct"],
+  ["Barème progressif (par part)", "bareme.3.1", "Taux de la 4e tranche", "pct"],
+  ["Barème progressif (par part)", "bareme.4.1", "Taux de la 5e tranche", "pct"],
+  ["Quotient familial", "qf.demi", "Plafond par demi-part", "eur"],
+  ["Quotient familial", "qf.quart", "Plafond par quart de part", "eur"],
+  ["Quotient familial", "qf.parentIsole", "Plafond de la part entière du premier enfant (parent isolé, case T)", "eur"],
+  ["Quotient familial", "qf.parentIsoleQuart", "Plafond de la demi-part du premier enfant en résidence alternée (case T)", "eur"],
+  ["Quotient familial", "qf.caseL", "Plafond de la demi-part case L", "eur"],
+  ["Quotient familial", "qf.complInvalide", "Réduction complémentaire par demi-part invalidité / ancien combattant", "eur"],
+  ["Quotient familial", "qf.complInvalideQuart", "Réduction complémentaire par quart de part d'invalidité", "eur"],
+  ["Quotient familial", "qf.complVeuf", "Réduction complémentaire des veufs avec personne à charge", "eur"],
+  ["Décote", "decote.seuilSeul", "Impôt maximal ouvrant droit à la décote – personne seule", "eur"],
+  ["Décote", "decote.seuilCouple", "Impôt maximal ouvrant droit à la décote – couple", "eur"],
+  ["Décote", "decote.baseSeul", "Montant de base – personne seule", "eur"],
+  ["Décote", "decote.baseCouple", "Montant de base – couple", "eur"],
+  ["Décote", "decote.taux", "Taux appliqué à l'impôt", "pct"],
+  ["Déductions et abattements", "fraisPro.min", "Déduction de 10 % sur salaires – minimum", "eur"],
+  ["Déductions et abattements", "fraisPro.max", "Déduction de 10 % sur salaires – maximum", "eur"],
+  ["Déductions et abattements", "pensions.min", "Déduction de 10 % sur pensions – minimum par personne", "eur"],
+  ["Déductions et abattements", "pensions.max", "Déduction de 10 % sur pensions – maximum par foyer", "eur"],
+  ["Déductions et abattements", "abtAge.plein", "Abattement personnes âgées / invalides – montant plein", "eur"],
+  ["Déductions et abattements", "abtAge.demi", "Abattement personnes âgées / invalides – demi-montant", "eur"],
+  ["Déductions et abattements", "abtAge.seuil1", "Abattement plein si revenu net global ≤", "eur"],
+  ["Déductions et abattements", "abtAge.seuil2", "Demi-abattement si revenu net global ≤", "eur"],
+  ["Déductions et abattements", "abtAge.anneeNaissanceMax", "Année de naissance maximale pour avoir plus de 65 ans", "year"],
+  ["Déductions et abattements", "abtEnfantMarie", "Abattement par personne rattachée (enfant marié ou chargé de famille)", "eur"],
+  ["Déductions et abattements", "pensionEnfantMajeur", "Pension alimentaire déductible par enfant majeur", "eur"],
+  ["Déductions et abattements", "forfaitAccueil", "Forfait d'accueil d'une personne de plus de 75 ans", "eur"],
+  ["Déductions et abattements", "per.min", "Plafond épargne retraite minimal", "eur"],
+  ["Déductions et abattements", "per.max", "Plafond épargne retraite maximal", "eur"],
+  ["Revenus fonciers et micro-entreprise", "microFoncier.plafond", "Plafond du micro-foncier", "eur"],
+  ["Revenus fonciers et micro-entreprise", "microFoncier.abt", "Abattement micro-foncier", "pct"],
+  ["Revenus fonciers et micro-entreprise", "deficitFoncier.plafond", "Déficit foncier imputable sur le revenu global", "eur"],
+  ["Revenus fonciers et micro-entreprise", "deficitFoncier.plafondEnergie", "Déficit foncier imputable (rénovation énergétique)", "eur"],
+  ["Revenus fonciers et micro-entreprise", "micro.ventes.plafond", "Plafond micro-BIC ventes", "eur"],
+  ["Revenus fonciers et micro-entreprise", "micro.services.plafond", "Plafond micro-BIC services / micro-BNC", "eur"],
+  ["Revenus fonciers et micro-entreprise", "micro.tourismeNonClasse.plafond", "Plafond micro-BIC meublés de tourisme non classés", "eur"],
+  ["Revenus fonciers et micro-entreprise", "micro.tourismeNonClasse.abt", "Abattement meublés de tourisme non classés", "pct"],
+  ["Revenus fonciers et micro-entreprise", "micro.tourismeClasse.abt", "Abattement meublés de tourisme classés", "pct"],
+  ["Revenus fonciers et micro-entreprise", "micro.ba.plafond", "Plafond micro-BA", "eur"],
+  ["Revenus fonciers et micro-entreprise", "micro.min", "Abattement minimal des régimes micro", "eur"],
+  ["Capitaux mobiliers et prélèvements sociaux", "pfu", "Prélèvement forfaitaire unique", "pct"],
+  ["Capitaux mobiliers et prélèvements sociaux", "avTaux", "Taux assurance-vie > 8 ans (primes ≤ 150 000 €)", "pct"],
+  ["Capitaux mobiliers et prélèvements sociaux", "avAbt.seul", "Abattement assurance-vie – personne seule", "eur"],
+  ["Capitaux mobiliers et prélèvements sociaux", "avAbt.couple", "Abattement assurance-vie – couple", "eur"],
+  ["Capitaux mobiliers et prélèvements sociaux", "abtDividendes", "Abattement sur dividendes (option barème)", "pct"],
+  ["Capitaux mobiliers et prélèvements sociaux", "ps.taux", "Prélèvements sociaux sur revenus du patrimoine", "pct"],
+  ["Capitaux mobiliers et prélèvements sociaux", "ps.csgDeductible", "CSG déductible", "pct"],
+  ["Hauts revenus", "cehr.seuil1", "CEHR – seuil de la tranche à 3 % (personne seule)", "eur"],
+  ["Hauts revenus", "cehr.seuil2", "CEHR – seuil de la tranche à 4 % (personne seule)", "eur"],
+  ["Hauts revenus", "cehr.taux1", "CEHR – taux 1", "pct"],
+  ["Hauts revenus", "cehr.taux2", "CEHR – taux 2", "pct"],
+  ["Hauts revenus", "cdhr.taux", "CDHR – taux d'imposition minimale", "pct"],
+  ["Hauts revenus", "cdhr.seuil", "CDHR – seuil d'assujettissement (personne seule)", "eur"],
+  ["Hauts revenus", "cdhr.seuilDecote", "CDHR – limite de la décote (personne seule)", "eur"],
+  ["Hauts revenus", "cdhr.tauxDecote", "CDHR – taux de la décote", "pct"],
+  ["Hauts revenus", "cdhr.majCouple", "CDHR – majoration d'impôt pour un couple", "eur"],
+  ["Hauts revenus", "cdhr.majPAC", "CDHR – majoration par personne à charge", "eur"],
+  ["Outre-mer et recouvrement", "dom.GMR.plafond", "Plafond de la réduction DOM 30 %", "eur"],
+  ["Outre-mer et recouvrement", "dom.GY.plafond", "Plafond de la réduction DOM 40 %", "eur"],
+  ["Outre-mer et recouvrement", "seuilRecouvrement", "Seuil de mise en recouvrement", "eur"],
+  ["Réductions et crédits d'impôt", "ri.dons75.plafond", "Dons 7UD retenus à 75 % – plafond", "eur"],
+  ["Réductions et crédits d'impôt", "ri.dons75.plafondFinAnnee", "Dons 7UD + 7UQ retenus à 75 % – plafond global", "eur"],
+  ["Réductions et crédits d'impôt", "ri.dons66.partRevenu", "Dons retenus dans la limite de … du revenu imposable", "pct"],
+  ["Réductions et crédits d'impôt", "ri.donsPartis.plafond", "Dons aux partis politiques – plafond", "eur"],
+  ["Réductions et crédits d'impôt", "ri.patrimoine.plafond", "Dons patrimoine religieux (7UJ) – plafond", "eur"],
+  ["Réductions et crédits d'impôt", "ri.scolarite.7EA", "Réduction par enfant au collège", "eur"],
+  ["Réductions et crédits d'impôt", "ri.scolarite.7EC", "Réduction par enfant au lycée", "eur"],
+  ["Réductions et crédits d'impôt", "ri.scolarite.7EF", "Réduction par enfant dans le supérieur", "eur"],
+  ["Réductions et crédits d'impôt", "ri.garde.plafond", "Frais de garde – plafond par enfant", "eur"],
+  ["Réductions et crédits d'impôt", "ri.garde.plafondAlternee", "Frais de garde – plafond par enfant en résidence alternée", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.base", "Emploi à domicile – plafond de base", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.majoration", "Emploi à domicile – majoration par enfant / personne de plus de 65 ans", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.max", "Emploi à domicile – plafond majoré maximal", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.premiereAnnee", "Emploi à domicile – plafond la première année", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.premiereAnneeMax", "Emploi à domicile – plafond majoré maximal la première année", "eur"],
+  ["Réductions et crédits d'impôt", "ri.domicile.invalide", "Emploi à domicile – plafond en cas d'invalidité", "eur"],
+  ["Réductions et crédits d'impôt", "ri.prestComp.plafond", "Prestations compensatoires – plafond", "eur"],
+  ["Réductions et crédits d'impôt", "ri.dependance.plafond", "Dépenses de dépendance – plafond par personne", "eur"],
+  ["Réductions et crédits d'impôt", "ri.pme.7CF", "Souscription au capital de PME – taux", "pct"],
+  ["Réductions et crédits d'impôt", "ri.pme.7CH", "Souscription ESUS / foncières solidaires – taux", "pct"],
+  ["Réductions et crédits d'impôt", "ri.pmePlafond.seul", "Souscription PME – plafond de versements (personne seule)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.pmePlafond.couple", "Souscription PME – plafond de versements (couple)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.fcpi.7GQ", "FCPI – taux (versements avant le 28/09/2025)", "pct"],
+  ["Réductions et crédits d'impôt", "ri.fcpi.7GR", "FCPI – taux (versements depuis le 28/09/2025)", "pct"],
+  ["Réductions et crédits d'impôt", "ri.fcpiPlafond.seul", "FCPI / FIP – plafond de versements (personne seule)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.fcpiPlafond.couple", "FCPI / FIP – plafond de versements (couple)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.soficaPlafond", "Sofica – plafond de versements", "eur"],
+  ["Réductions et crédits d'impôt", "ri.bornes.plafond", "Bornes de recharge – crédit maximal par borne", "eur"],
+  ["Réductions et crédits d'impôt", "ri.aidePersonnes.plafond.seul", "Équipements personnes âgées / handicapées – plafond (personne seule)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.aidePersonnes.plafond.couple", "Équipements personnes âgées / handicapées – plafond (couple)", "eur"],
+  ["Réductions et crédits d'impôt", "ri.risquesTechno.plafond", "Risques technologiques – plafond", "eur"],
+  ["Réductions et crédits d'impôt", "ri.plafondNiches", "Plafonnement global des avantages fiscaux", "eur"],
+  ["Réductions et crédits d'impôt", "ri.plafondNiches18", "Plafonnement global majoré (Sofica, outre-mer)", "eur"],
+];
+function paramDisplay(path, kind, obj) { const v = getPath(obj, path); if (v == null || !isFinite(v)) return ""; return kind === "pct" ? String(Math.round(v * 10000) / 100) : String(v); }
+function renderParams() {
+  const ov = state.__params || {};
+  let html = `<section class="card collapsed" id="sec-params"><h2><span class="tw">▼</span><span class="code">⚙</span>Paramètres annuels : barème, plafonds et taux<span class="form">LF 2026</span></h2><div class="body">
+  <p class="intro">Valeurs applicables aux revenus 2025, modifiables pour une autre année. Une valeur modifiée est surlignée ; la valeur par défaut est rappelée en dessous. <button class="btn" id="btnParamsReset" type="button">Rétablir toutes les valeurs par défaut</button></p><table class="fields">`;
+  let grp = "";
+  PARAM_DEFS.forEach(([g, path, label, kind]) => {
+    if (g !== grp) { grp = g; html += `<tr><td colspan="2"><div class="grp">${esc(g)}</div></td></tr>`; }
+    const def = paramDisplay(path, kind, DEFAULT_PARAMS);
+    const cur = ov[path] != null && ov[path] !== "" ? ov[path] : def;
+    const modified = String(cur) !== String(def);
+    const unit = kind === "pct" ? "pct" : kind === "eur" ? "" : "plain";
+    html += `<tr id="prow-${path.replace(/\./g, "_")}"><td class="lbl"><span class="l">${esc(label)}</span><span class="h">Par défaut : ${esc(def)}${kind === "pct" ? " %" : kind === "eur" ? " €" : ""}</span></td><td class="in"><span class="cell money-wrap ${unit}"><input type="text" inputmode="decimal" class="${unit === "plain" ? "" : "money"} ${modified ? "capped" : ""}" data-param="${path}" value="${esc(cur)}"></span></td></tr>`;
+  });
+  html += `</table></div></section>`;
+  return html;
+}
+function readParamsFromState() {
+  const ov = state.__params || {}, eff = {};
+  PARAM_DEFS.forEach(([g, path, label, kind]) => {
+    const raw = ov[path]; if (raw == null || raw === "") return;
+    const n = num(raw); if (!isFinite(n)) return;
+    eff[path] = kind === "pct" ? n / 100 : n;
+  });
+  applyParamOverrides(eff);
+}
+
 // ===================== État et rendu =====================
 const STORE_KEY = "ir2026-revenus2025";
 let state = {};
@@ -858,14 +1021,23 @@ function renderForm() {
   main.innerHTML = SECTIONS.map(sec => {
     const head = sec.persons ? `<tr><th></th><th><span class="cD1">Déclarant 1</span> <span class="cD2">Déclarant 2</span> ${sec.persons === true ? '<span class="cPAC">Pers. à charge</span>' : ""}</th></tr>` : "";
     return `<section class="card" id="sec-${sec.id}"><h2><span class="tw">▼</span>${sec.n ? `<span class="code">${sec.n}</span>` : ""}${esc(sec.title)}<span class="form">${esc(sec.form)}</span></h2><div class="body">${sec.intro ? `<p class="intro">${esc(sec.intro)}</p>` : ""}<table class="fields">${head}${sec.rows.map(r => renderRow(r, sec)).join("")}</table></div></section>`;
-  }).join("");
-  nav.innerHTML = SECTIONS.map(sec => `<a href="#sec-${sec.id}" data-sec="${sec.id}"><span class="n">${sec.n || "•"}</span>${esc(sec.title)}</a>`).join("");
+  }).join("") + renderParams();
+  nav.innerHTML = SECTIONS.map(sec => `<a href="#sec-${sec.id}" data-sec="${sec.id}"><span class="n">${sec.n || "•"}</span>${esc(sec.title)}</a>`).join("") + `<a href="#sec-params" data-sec="params"><span class="n">⚙</span>Paramètres annuels</a>`;
   main.addEventListener("input", onInput);
   main.addEventListener("change", onInput);
   main.querySelectorAll("section.card>h2").forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed")));
+  document.getElementById("btnParamsReset").addEventListener("click", () => { state.__params = {}; save(); readParamsFromState(); document.querySelectorAll("[data-param]").forEach(i => { const d = PARAM_DEFS.find(x => x[1] === i.dataset.param); i.value = paramDisplay(d[1], d[3], DEFAULT_PARAMS); i.classList.remove("capped"); }); update(); });
 }
 function onInput(e) {
-  const el = e.target; if (!el.dataset || !el.dataset.code) return;
+  const el = e.target; if (!el.dataset) return;
+  if (el.dataset.param) {
+    state.__params = state.__params || {};
+    state.__params[el.dataset.param] = el.value;
+    const d = PARAM_DEFS.find(x => x[1] === el.dataset.param);
+    el.classList.toggle("capped", String(el.value).trim() !== paramDisplay(d[1], d[3], DEFAULT_PARAMS));
+    readParamsFromState(); save(); update(); return;
+  }
+  if (!el.dataset.code) return;
   const code = el.dataset.code;
   if (el.type === "checkbox") state[code] = el.checked;
   else if (el.type === "radio") { if (el.checked) state[code] = el.value; }
@@ -1007,10 +1179,10 @@ document.getElementById("btnExport").addEventListener("click", () => {
 document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileImport").click());
 document.getElementById("fileImport").addEventListener("change", (e) => {
   const f = e.target.files[0]; if (!f) return;
-  const rd = new FileReader(); rd.onload = () => { try { state = JSON.parse(rd.result) || {}; save(); renderForm(); update(); } catch (err) { alert("Fichier JSON invalide."); } }; rd.readAsText(f);
+  const rd = new FileReader(); rd.onload = () => { try { state = JSON.parse(rd.result) || {}; save(); readParamsFromState(); renderForm(); update(); } catch (err) { alert("Fichier JSON invalide."); } }; rd.readAsText(f);
   e.target.value = "";
 });
-document.getElementById("btnReset").addEventListener("click", () => { if (confirm("Effacer toutes les cases saisies ?")) { state = { residence: "FR", regimeFoncier: "micro" }; save(); renderForm(); update(); } });
+document.getElementById("btnReset").addEventListener("click", () => { if (confirm("Effacer toutes les cases saisies ?")) { state = { residence: "FR", regimeFoncier: "micro", __params: state.__params || {} }; save(); readParamsFromState(); renderForm(); update(); } });
 document.getElementById("btnTheme").addEventListener("click", () => {
   const cur = document.documentElement.getAttribute("data-theme");
   const next = cur === "dark" ? "light" : "dark";
@@ -1024,6 +1196,7 @@ const io = ("IntersectionObserver" in window) ? new IntersectionObserver((entrie
   entries.forEach(en => { if (en.isIntersecting) { document.querySelectorAll("nav.side a").forEach(a => a.classList.toggle("active", a.dataset.sec === en.target.id.replace("sec-", ""))); } });
 }, { rootMargin: "-20% 0px -70% 0px" }) : null;
 
+readParamsFromState();
 renderForm();
 update();
 if (io) document.querySelectorAll("section.card[id^=sec-]").forEach(s => io.observe(s));
