@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impôt sur le revenu 2026</title>
+<meta name="description" content="Simulateur complet de l'impôt sur le revenu français : déclaration 2026 des revenus 2025 (formulaires 2042, 2042-C, 2042-C-PRO, 2042-RICI, 2044).">
+<style>
+:root{
+  --bg:#f4f6f9; --panel:#ffffff; --ink:#15202b; --muted:#5b6774; --line:#dde3ea;
+  --accent:#0b5fff; --accent-ink:#ffffff; --ok:#137a3a; --warn:#b5560a; --bad:#b3261e;
+  --chip:#eef3ff; --row:#f8fafc; --focus:#8ab4ff; --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(15,23,42,.06);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141a; --panel:#171e26; --ink:#e7edf3; --muted:#9aa7b4; --line:#2a3440;
+    --accent:#5b8cff; --accent-ink:#0b1220; --ok:#4cc38a; --warn:#f0a35e; --bad:#ff7b72;
+    --chip:#1b2a44; --row:#1b232c; --focus:#3d6bff; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --panel:#171e26; --ink:#e7edf3; --muted:#9aa7b4; --line:#2a3440;
+  --accent:#5b8cff; --accent-ink:#0b1220; --ok:#4cc38a; --warn:#f0a35e; --bad:#ff7b72;
+  --chip:#1b2a44; --row:#1b232c; --focus:#3d6bff; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+.top-in{max-width:1400px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;font-weight:650;letter-spacing:-.01em}
+.top .sub{color:var(--muted);font-size:13px}
+.top .grow{flex:1}
+.pill{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill b{font-size:16px}
+.pill.neg b{color:var(--ok)} .pill.pos b{color:var(--bad)}
+.btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.layout{max-width:1400px;margin:0 auto;padding:16px;display:grid;grid-template-columns:220px minmax(0,1fr) 380px;gap:16px;align-items:start}
+nav.side{position:sticky;top:64px;display:flex;flex-direction:column;gap:2px}
+nav.side a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:13.5px;border-left:3px solid transparent}
+nav.side a:hover{background:var(--panel)}
+nav.side a.active{background:var(--panel);border-left-color:var(--accent);font-weight:600}
+nav.side a .n{display:inline-block;width:26px;color:var(--muted);font-family:var(--mono);font-size:12px}
+nav.side a.has-err{color:var(--bad)}
+nav.side a.has-warn::after{content:" •";color:var(--warn)}
+main{min-width:0}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+section.card>h2{margin:0;padding:14px 18px;font-size:16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline;cursor:pointer;user-select:none}
+section.card>h2 .form{margin-left:auto;font-size:12px;color:var(--muted);font-weight:500;font-family:var(--mono)}
+section.card>h2 .tw{color:var(--muted);font-size:12px;transition:transform .15s}
+section.card.collapsed>h2 .tw{transform:rotate(-90deg)}
+section.card.collapsed .body{display:none}
+section.card .body{padding:6px 18px 14px}
+.intro{color:var(--muted);font-size:13px;margin:8px 0 6px}
+.grp{margin:12px 0 4px;font-size:13px;font-weight:650;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+table.fields{width:100%;border-collapse:collapse}
+table.fields th{font-size:12px;color:var(--muted);text-align:right;font-weight:600;padding:8px 6px 4px}
+table.fields th:first-child{text-align:left}
+table.fields td{padding:6px 6px;border-top:1px solid var(--line);vertical-align:top}
+table.fields tr.hidden{display:none}
+table.fields tr:hover td{background:var(--row)}
+td.lbl{width:52%}
+td.lbl .l{display:block}
+td.lbl .h{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+td.lbl .w{display:block;color:var(--warn);font-size:12.5px;margin-top:3px}
+td.lbl .e{display:block;color:var(--bad);font-size:12.5px;margin-top:3px;font-weight:600}
+td.lbl .k{display:block;color:var(--ok);font-size:12.5px;margin-top:3px}
+td.in{text-align:right;white-space:nowrap}
+.code{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--chip);border-radius:4px;padding:1px 5px;margin-right:4px;vertical-align:middle}
+input[type=text],input[type=number],select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:150px;text-align:right;font-variant-numeric:tabular-nums}
+select{text-align:left;width:auto;max-width:100%}
+input.money{padding-right:22px;background-image:linear-gradient(transparent,transparent);position:relative}
+.money-wrap{position:relative;display:inline-block}
+.money-wrap::after{content:"€";position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px;pointer-events:none}
+.money-wrap.pct::after{content:"%"}
+input:focus,select:focus{outline:2px solid var(--focus);outline-offset:1px;border-color:var(--accent)}
+input.err{border-color:var(--bad)}
+input.capped{border-color:var(--warn)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);vertical-align:middle}
+.no-pac .cPAC{display:none !important}
+.no-d2 .cD2{display:none !important}
+td.in .cell{display:inline-block;margin-left:6px}
+aside.res{position:sticky;top:64px}
+.res .card{margin-bottom:12px}
+.res h3{margin:0;padding:12px 16px;font-size:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.res .body{padding:8px 16px 12px}
+.big{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 2px}
+.big.neg{color:var(--ok)} .big.pos{color:var(--bad)}
+.big-l{color:var(--muted);font-size:13px}
+table.avis{width:100%;border-collapse:collapse;font-size:13.5px}
+table.avis td{padding:5px 0;border-top:1px dashed var(--line);vertical-align:top}
+table.avis tr:first-child td{border-top:0}
+table.avis td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-family:var(--mono);font-size:13px}
+table.avis tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+table.avis tr.sub td{color:var(--muted);padding-left:12px;font-size:12.5px}
+table.avis tr.sec td{font-weight:650;padding-top:10px;color:var(--muted);text-transform:uppercase;font-size:11.5px;letter-spacing:.04em;border-top:0}
+table.avis tr.zero{display:none}
+table.avis.showzero tr.zero{display:table-row}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.kpi{background:var(--row);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi .v{font-weight:700;font-variant-numeric:tabular-nums;font-size:15px}
+.kpi .l{color:var(--muted);font-size:12px}
+.msgs{display:flex;flex-direction:column;gap:6px}
+.msg{border-radius:8px;padding:8px 10px;font-size:13px;border:1px solid var(--line);background:var(--row)}
+.msg.err{border-color:var(--bad);color:var(--bad)}
+.msg.warn{border-color:var(--warn)}
+.msg.ok{border-color:var(--ok)}
+.msg a{cursor:pointer;text-decoration:underline}
+.tiny{font-size:12px;color:var(--muted)}
+.switch{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+details.calc summary{cursor:pointer;color:var(--accent);font-size:13px;padding:6px 0}
+pre.trace{font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;background:var(--row);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:400px;overflow:auto;margin:6px 0 0}
+footer{max-width:1400px;margin:0 auto;padding:12px 16px 40px;color:var(--muted);font-size:12.5px}
+footer ul{margin:6px 0;padding-left:18px}
+@media (max-width:1150px){.layout{grid-template-columns:1fr 360px}nav.side{display:none}}
+@media (max-width:820px){
+  .layout{grid-template-columns:1fr;padding:12px 16px}
+  aside.res{position:static}
+  td.lbl{width:auto}
+  table.fields td.in{white-space:normal}
+  input[type=text],input[type=number]{width:120px}
+  .top h1{font-size:15px}
+}
+.radio-row{display:flex;gap:14px;flex-wrap:wrap;padding:6px 0}
+.radio-row label{display:flex;gap:6px;align-items:center;font-size:13.5px;cursor:pointer}
+.hidden{display:none !important}
+.srch{font-size:12.5px;color:var(--muted);padding:6px 0 0}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div>
+      <h1>Impôt sur le revenu 2026 — revenus 2025</h1>
+      <div class="sub">Déclaration 2042 · 2042-C · 2042-C-PRO · 2042-RICI · 2044 — calcul instantané, barème de la loi de finances pour 2026</div>
+    </div>
+    <div class="grow"></div>
+    <div class="pill" id="pillTotal"><span class="tiny">Reste à payer</span> <b>—</b></div>
+    <button class="btn" id="btnExport" title="Télécharger la saisie au format JSON">Exporter</button>
+    <button class="btn" id="btnImport" title="Recharger une saisie JSON">Importer</button>
+    <input type="file" id="fileImport" accept="application/json" class="hidden">
+    <button class="btn" id="btnReset" title="Effacer toutes les cases">Réinitialiser</button>
+    <button class="btn" id="btnTheme" title="Thème clair / sombre">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="side" id="sideNav"></nav>
+  <main id="main"></main>
+  <aside class="res" id="results"></aside>
+</div>
+
+<footer>
+  <b>Paramètres retenus (imposition des revenus 2025)</b> — indexation de 0,9 % du barème et des seuils associés par la loi n° 2026-103 du 19 février 2026 de finances pour 2026 (art. 4) :
+  <ul>
+    <li>Barème : 0 % jusqu'à 11 600 € ; 11 % jusqu'à 29 579 € ; 30 % jusqu'à 84 577 € ; 41 % jusqu'à 181 917 € ; 45 % au-delà (par part).</li>
+    <li>Plafonnement du quotient familial : 1 807 € par demi-part (904 € par quart de part) ; 4 262 € pour la part entière du premier enfant d'un parent isolé (case T) ; 1 079 € pour la demi-part de la case L ; réduction complémentaire de 1 801 € par demi-part d'invalidité / ancien combattant (900 € par quart) ; 2 011 € pour la part supplémentaire des veufs ayant des personnes à charge.</li>
+    <li>Décote : 897 € − 45,25 % de l'impôt (personne seule, impôt &lt; 1 982 €) ; 1 483 € − 45,25 % (couple, impôt &lt; 3 277 €).</li>
+    <li>Déduction forfaitaire de 10 % : salaires min. 509 € / max. 14 555 € par personne ; pensions min. 454 € par personne / max. 4 439 € par foyer.</li>
+    <li>Abattement personnes âgées de plus de 65 ans ou invalides : 2 822 € si revenu net global ≤ 17 670 € ; 1 411 € si ≤ 28 430 € (doublé si les deux conjoints remplissent la condition).</li>
+    <li>Abattement par enfant marié / chargé de famille rattaché : 6 855 € par personne ; pension alimentaire déductible par enfant majeur : 6 855 € ; forfait hébergement / accueil d'une personne de plus de 75 ans : 4 039 €.</li>
+    <li>Épargne retraite : plafond de déduction minimal 4 710 €, maximal 37 680 € (PASS 2025 = 47 100 €).</li>
+    <li>Contribution exceptionnelle sur les hauts revenus : 3 % puis 4 % au-delà de 250 000 € / 500 000 € (doublés pour un couple). Contribution différentielle (CDHR) : imposition minimale de 20 % du RFR au-delà des mêmes seuils, avec décote jusqu'à 330 000 € / 660 000 €.</li>
+    <li>PFU 12,8 % (7,5 % pour l'assurance-vie de plus de 8 ans, primes ≤ 150 000 €) ; prélèvements sociaux sur revenus du patrimoine 17,2 % ; CSG déductible 6,8 %. Seuil de mise en recouvrement : 61 €.</li>
+    <li>Plafonnement global des avantages fiscaux : 10 000 € (18 000 € avec Sofica / outre-mer).</li>
+  </ul>
+  Ce simulateur reproduit la mécanique de liquidation de l'impôt décrite dans la brochure pratique 2026 et le BOFiP (BOI-IR-LIQ). Il ne remplace pas l'avis d'imposition ; certaines situations rares (revenus de source étrangère complexes, plus-values professionnelles, lissage de la CEHR, reports de déficits pluriannuels…) sont traitées de façon simplifiée. Les données saisies restent dans votre navigateur.
+</footer>
+<script>
+// ===ENGINE START===
+// Paramètres applicables à l'imposition des revenus 2025 (déclaration 2026).
+// Sources : loi n° 2026-103 du 19 février 2026 de finances pour 2026 (art. 4, indexation 0,9 %),
+// CGI art. 156, 157 bis, 158, 194 à 197, 200 et suivants, 223 sexies, 1417 ; brochure pratique IR 2026 ; BOI-IR-LIQ ; BOI-IR-CDHR.
+const PARAMS = {
+  annee: 2025,
+  bareme: [[11600, 0], [29579, 0.11], [84577, 0.30], [181917, 0.41], [Infinity, 0.45]],
+  qf: { demi: 1807, quart: 904, parentIsole: 4262, parentIsoleQuart: 2131, caseL: 1079, complInvalide: 1801, complInvalideQuart: 900, complVeuf: 2011 },
+  decote: { seuilSeul: 1982, seuilCouple: 3277, baseSeul: 897, baseCouple: 1483, taux: 0.4525 },
+  fraisPro: { min: 509, max: 14555 },
+  pensions: { min: 454, max: 4439 },
+  rentes: { "1AW": 0.70, "1BW": 0.50, "1CW": 0.40, "1DW": 0.30 },
+  abtAge: { plein: 2822, demi: 1411, seuil1: 17670, seuil2: 28430, anneeNaissanceMax: 1960 },
+  abtEnfantMarie: 6855, pensionEnfantMajeur: 6855, forfaitAccueil: 4039, majorationPensionAvant2006: 1.25,
+  per: { min: 4710, max: 37680 },
+  microFoncier: { plafond: 15000, abt: 0.30 },
+  deficitFoncier: { plafond: 10700, plafondEnergie: 21400 },
+  micro: {
+    ventes: { abt: 0.71, plafond: 188700 }, services: { abt: 0.50, plafond: 77700 }, meuble: { abt: 0.50, plafond: 77700 },
+    tourismeClasse: { abt: 0.50, plafond: 77700 }, tourismeNonClasse: { abt: 0.30, plafond: 15000 },
+    bnc: { abt: 0.34, plafond: 77700 }, ba: { abt: 0.87, plafond: 120000 }, min: 305,
+    versementLiberatoire: { "5TA": 0.71, "5UA": 0.71, "5TB": 0.50, "5UB": 0.50, "5TE": 0.34, "5UE": 0.34 }
+  },
+  pfu: 0.128, avTaux: 0.075, avAbt: { seul: 4600, couple: 9200 }, abtDividendes: 0.40,
+  ps: { taux: 0.172, csgDeductible: 0.068 },
+  cehr: { seuil1: 250000, seuil2: 500000, taux1: 0.03, taux2: 0.04 },
+  cdhr: { taux: 0.20, seuil: 250000, seuilDecote: 330000, tauxDecote: 0.825, majCouple: 12500, majPAC: 1500 },
+  dom: { GMR: { taux: 0.30, plafond: 2450 }, GY: { taux: 0.40, plafond: 4050 } },
+  seuilRecouvrement: 61,
+  ri: {
+    dons75: { taux: 0.75, plafond: 1000 }, dons66: { taux: 0.66, partRevenu: 0.20 }, donsPartis: { plafond: 15000 }, patrimoine: { taux: 0.75, plafond: 1000 },
+    syndicat: 0.66,
+    garde: { taux: 0.50, plafond: 3500, plafondAlternee: 1750 },
+    domicile: { taux: 0.50, base: 12000, majoration: 1500, majorationAlternee: 750, max: 15000, premiereAnnee: 15000, premiereAnneeMax: 18000, invalide: 20000 },
+    scolarite: { "7EA": 61, "7EC": 153, "7EF": 183, "7EB": 30.5, "7ED": 76.5, "7EG": 91.5 },
+    prestComp: { taux: 0.25, plafond: 30500 },
+    dependance: { taux: 0.25, plafond: 10000 },
+    pme: { "7CF": 0.18, "7CH": 0.25, "7CI": 0.30, "7CJ": 0.50 }, pmePlafond: { seul: 50000, couple: 100000 }, jeiPlafond: { seul: 75000, couple: 150000 }, jeirPlafond: { seul: 50000, couple: 100000 },
+    fcpi: { "7GQ": 0.18, "7GR": 0.25, "7FM": 0.30, "7FL": 0.30 }, fcpiPlafond: { seul: 12000, couple: 24000 },
+    sofica: { "7FN": 0.30, "7GN": 0.36, "7EN": 0.48 }, soficaPlafond: 18000, soficaPartRNG: 0.25,
+    bornes: { taux: 0.75, plafond: 500 },
+    aidePersonnes: { taux: 0.25, plafond: { seul: 5000, couple: 10000 }, parPAC: 400 },
+    risquesTechno: { taux: 0.40, plafond: 20000 },
+    forets: { taux: 0.25, plafond: { seul: 6250, couple: 12500 } },
+    plafondNiches: 10000, plafondNiches18: 18000
+  }
+};
+
+function num(x) {
+  if (x === true) return 1; if (x === false || x == null) return 0;
+  if (typeof x === "number") return isFinite(x) ? x : 0;
+  const s = String(x).replace(/\s| |€/g, "").replace(",", ".");
+  const n = parseFloat(s); return isFinite(n) ? n : 0;
+}
+const R = (x) => Math.round(x);
+const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+function fmt(n) { return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(Math.round(n)) + " €"; }
+
+function baremeParPart(q) {
+  let t = 0, prev = 0;
+  for (const [lim, taux] of PARAMS.bareme) { if (q > prev) t += (Math.min(q, lim) - prev) * taux; prev = lim; }
+  return t;
+}
+function tmi(q) { let prev = 0, r = 0; for (const [lim, taux] of PARAMS.bareme) { if (q > prev) r = taux; prev = lim; } return r; }
+function impotBareme(rni, parts) { return parts > 0 ? baremeParPart(rni / parts) * parts : 0; }
+
+// Nombre de parts et paramètres du plafonnement du quotient familial (CGI 194, 195, 197 I-2)
+function quotientFamilial(v) {
+  const sit = v.situation || "";
+  const couple = sit === "M" || sit === "O";
+  const veuf = sit === "V";
+  const F = num(v.nbF), H = num(v.nbH), J = num(v.nbJ), R_ = num(v.nbR), G = Math.min(num(v.nbG), F), I = Math.min(num(v.nbI), H);
+  const nDep = F + H + J + R_;
+  let parts = couple ? 2 : 1, partsRef = parts, plafond = 0, compl = 0;
+  const detail = [];
+  let rank = 0, partsEnfants = 0;
+  for (let i = 0; i < F + J + R_; i++) { rank++; partsEnfants += rank <= 2 ? 0.5 : 1; }
+  for (let i = 0; i < H; i++) { rank++; partsEnfants += (rank <= 2 ? 0.5 : 1) / 2; }
+  if (partsEnfants) { parts += partsEnfants; plafond += partsEnfants * 2 * PARAMS.qf.demi; detail.push(`Personnes à charge : +${partsEnfants} part(s)`); }
+  if (G + R_) { parts += 0.5 * (G + R_); plafond += (G + R_) * PARAMS.qf.demi; compl += (G + R_) * PARAMS.qf.complInvalide; detail.push(`Personnes à charge invalides : +${0.5 * (G + R_)} part(s)`); }
+  if (I) { parts += 0.25 * I; plafond += I * PARAMS.qf.quart; compl += I * PARAMS.qf.complInvalideQuart; detail.push(`Enfants invalides en résidence alternée : +${0.25 * I}`); }
+  if (veuf && nDep > 0) { parts += 1; plafond += 2 * PARAMS.qf.demi; compl += PARAMS.qf.complVeuf; detail.push("Veuf(ve) avec personne(s) à charge : +1 part"); }
+  let T = false, L = false;
+  if (!couple && !veuf && v.caseT && nDep > 0) {
+    T = true;
+    if (F + J + R_ > 0) { parts += 0.5; plafond += PARAMS.qf.parentIsole - PARAMS.qf.demi; detail.push("Parent isolé (case T) : +0,5 part"); }
+    else { parts += 0.25; plafond += PARAMS.qf.parentIsoleQuart - PARAMS.qf.quart; detail.push("Parent isolé (case T, résidence alternée) : +0,25 part"); }
+  }
+  if (!couple && nDep === 0 && v.caseL) { L = true; parts += 0.5; plafond += PARAMS.qf.caseL; detail.push("Case L (enfant élevé seul pendant 5 ans) : +0,5 part"); }
+  let nInv = 0;
+  if (v.caseP) nInv++;
+  if (couple && v.caseF) nInv++;
+  if (v.caseW) nInv++;
+  if (veuf && v.caseS) nInv++;
+  if (!couple && v.caseG) nInv++;
+  nInv = Math.min(nInv, couple ? 2 : 1);
+  if (nInv) { parts += 0.5 * nInv; plafond += nInv * PARAMS.qf.demi; compl += nInv * PARAMS.qf.complInvalide; detail.push(`Invalidité / ancien combattant (cases P, F, W, S, G) : +${0.5 * nInv} part`); }
+  return { parts, partsRef, plafond, compl, couple, veuf, nDep, T, L, detail, nbEnfants: F + H + J, nbPAC: nDep };
+}
+
+// Droits simples avec plafonnement du quotient familial (BOI-IR-LIQ-20-20-20)
+function droitsSimples(rni, qf) {
+  const ir1 = impotBareme(rni, qf.parts);
+  if (qf.parts === qf.partsRef || rni <= 0) return { ir: ir1, ir1, ir2: ir1, plafonne: false, gainQF: 0 };
+  const ir2 = impotBareme(rni, qf.partsRef);
+  let ir = Math.max(ir1, ir2 - qf.plafond);
+  const plafonne = ir > ir1 + 0.5;
+  if (plafonne && qf.compl) ir = Math.max(ir1, ir - qf.compl);
+  return { ir, ir1, ir2, plafonne, gainQF: ir2 - ir };
+}
+
+function abattement10(brut, min, max) { if (brut <= 0) return 0; return Math.min(brut, clamp(brut * 0.10, min, max)); }
+
+function compute(v) {
+  const P = PARAMS, t = [];
+  const log = (s) => t.push(s);
+  const qf = quotientFamilial(v);
+  const couple = qf.couple;
+  const warnings = [], errors = [];
+  const persons = ["A", "B", "C"]; // déclarant 1, déclarant 2, personnes à charge
+  const g = (code) => num(v[code]);
+
+  // ---------- 1. Traitements, salaires, pensions, rentes ----------
+  let salairesNets = 0, salairesBruts = 0, dedSalaires = 0;
+  const salDetail = [];
+  persons.forEach((p, i) => {
+    if (i === 1 && !couple) return;
+    const brut = g("1" + p + "J") + g("1" + p + "P");
+    if (brut <= 0) return;
+    const reels = v["fr" + p] ? g("1" + p + "K") : 0;
+    const ded = reels > 0 ? Math.min(reels, brut) : abattement10(brut, P.fraisPro.min, P.fraisPro.max);
+    salairesBruts += brut; dedSalaires += ded; salairesNets += brut - ded;
+    salDetail.push(`${["Déclarant 1", "Déclarant 2", "Personnes à charge"][i]} : ${fmt(brut)} − ${reels > 0 ? "frais réels" : "10 %"} ${fmt(ded)} = ${fmt(brut - ded)}`);
+  });
+  let pensionsBrutes = 0, dedPensions = 0;
+  persons.forEach((p, i) => {
+    if (i === 1 && !couple) return;
+    const brut = g("1" + p + "S") + g("1" + p + "Z") + g("1" + p + "O");
+    if (brut <= 0) return;
+    pensionsBrutes += brut; dedPensions += Math.min(brut, Math.max(brut * 0.10, P.pensions.min));
+  });
+  dedPensions = Math.min(dedPensions, P.pensions.max);
+  const pensionsNettes = pensionsBrutes - dedPensions;
+  let rentesNettes = 0;
+  for (const c in P.rentes) rentesNettes += g(c) * P.rentes[c];
+  const heuresSupExo = g("1GH") + g("1HH") + g("1IH");
+
+  // ---------- 2. Revenus de capitaux mobiliers ----------
+  const optBareme = !!v["2OP"];
+  const abtAV = couple ? P.avAbt.couple : P.avAbt.seul;
+  let restAbt = abtAV;
+  const av2CH = g("2CH"), av2WW = g("2WW"), av2ZZ = g("2ZZ"), av2VV = g("2VV");
+  const ch = Math.max(0, av2CH - restAbt); restAbt = Math.max(0, restAbt - av2CH);
+  const ww = Math.max(0, av2WW - restAbt); restAbt = Math.max(0, restAbt - av2WW);
+  const zz = Math.max(0, av2ZZ - restAbt); restAbt = Math.max(0, restAbt - av2ZZ);
+  const divEligibles = g("2DC") + g("2FU");
+  const autresRCM = g("2TS") + g("2TR") + g("2TT") + g("2GO");
+  let rcmBareme = 0, rcmPFU = 0, impotPFU = 0, abtDiv = 0;
+  if (optBareme) {
+    abtDiv = divEligibles * P.abtDividendes;
+    rcmBareme = Math.max(0, divEligibles - abtDiv + autresRCM + ch + ww + zz + av2VV - g("2CA"));
+  } else {
+    rcmBareme = ch; // produits d'assurance-vie (primes avant le 27/09/2017) : toujours au barème
+    rcmPFU = divEligibles + autresRCM + av2VV + zz;
+    impotPFU += rcmPFU * P.pfu + ww * P.avTaux;
+  }
+  const rcmTotal = divEligibles + autresRCM + av2CH + av2WW + av2ZZ + av2VV;
+
+  // ---------- 3. Plus-values ----------
+  const pvNette = Math.max(0, g("3VG") - g("3VH"));
+  const abtPV = optBareme ? Math.min(pvNette, g("3SG") + g("3SL")) : 0;
+  let pvBareme = 0;
+  if (optBareme) pvBareme = pvNette - abtPV; else impotPFU += pvNette * P.pfu;
+  const gainsAttrib = g("3TZ"); // gains d'acquisition d'actions gratuites : barème (sans abattement)
+  pvBareme += gainsAttrib;
+  impotPFU = R(impotPFU);
+
+  // ---------- 4. Revenus fonciers ----------
+  let rfNet = 0, rfDeficitRG = 0;
+  if (v.regimeFoncier === "reel") {
+    const ba = g("4BA"), bd = g("4BD");
+    rfNet = Math.max(0, ba - Math.min(bd, ba));
+    const capDef = v["4BCenergie"] ? P.deficitFoncier.plafondEnergie : P.deficitFoncier.plafond;
+    rfDeficitRG = Math.min(g("4BC"), capDef);
+    if (g("4BC") > capDef) warnings.push({ code: "4BC", msg: `Le déficit foncier imputable sur le revenu global est limité à ${fmt(capDef)} (case 4BC) ; le surplus est reportable sur les revenus fonciers des 10 années suivantes.` });
+  } else {
+    const be = g("4BE");
+    if (be > P.microFoncier.plafond) errors.push({ code: "4BE", msg: `Le micro-foncier n'est possible que jusqu'à ${fmt(P.microFoncier.plafond)} de revenus bruts : déclarez au régime réel (2044).` });
+    rfNet = be * (1 - P.microFoncier.abt);
+  }
+
+  // ---------- 5. Revenus professionnels ----------
+  const microNet = (brut, abt) => brut <= 0 ? 0 : Math.max(0, brut - Math.max(P.micro.min, brut * abt));
+  let bicPro = 0, bicNonPro = 0, bnc = 0, ba_ = 0, deficitsPro = 0, vlNet = 0, vlBrut = 0;
+  const microCodes = [
+    ["5KO", "5LO", "5MO", P.micro.ventes], ["5KP", "5LP", "5MP", P.micro.services],
+    ["5ND", "5OD", "5PD", P.micro.meuble, "np"], ["5NG", "5OG", "5PG", P.micro.tourismeClasse, "np"], ["5NW", "5OW", "5PW", P.micro.tourismeNonClasse, "np"],
+    ["5HQ", "5IQ", "5JQ", P.micro.bnc, "bnc"], ["5XB", "5YB", "5ZB", P.micro.ba, "ba"]
+  ];
+  microCodes.forEach(([a, b, c, prm, kind]) => {
+    [a, b, c].forEach((code, i) => {
+      if (i === 1 && !couple) return;
+      const brut = g(code); if (brut <= 0) return;
+      if (brut > prm.plafond) warnings.push({ code, msg: `Recettes supérieures au plafond du régime micro (${fmt(prm.plafond)}) : le régime réel s'applique en principe.` });
+      const n = microNet(brut, prm.abt);
+      if (kind === "np") bicNonPro += n; else if (kind === "bnc") bnc += n; else if (kind === "ba") ba_ += n; else bicPro += n;
+    });
+  });
+  for (const code in P.micro.versementLiberatoire) {
+    const brut = g(code); if (brut > 0) { vlBrut += brut; vlNet += microNet(brut, P.micro.versementLiberatoire[code]); }
+  }
+  // Régime réel
+  const reel = (a, b) => (couple ? g(a) + g(b) : g(a));
+  bicPro += reel("5KC", "5LC"); deficitsPro += reel("5KF", "5LF");
+  bicNonPro += reel("5NA", "5OA"); const deficitLMNP = reel("5NY", "5OY");
+  bnc += reel("5QC", "5RC"); deficitsPro += reel("5QE", "5RE");
+  ba_ += reel("5HC", "5IC"); deficitsPro += reel("5HF", "5IF");
+  const bicNonProNet = Math.max(0, bicNonPro - deficitLMNP);
+  if (deficitLMNP > bicNonPro) warnings.push({ code: "5NY", msg: "Le déficit de location meublée non professionnelle n'est imputable que sur les bénéfices de même nature (10 ans), pas sur le revenu global." });
+
+  // ---------- Revenu brut global ----------
+  const cats = {
+    "Traitements et salaires nets": salairesNets,
+    "Pensions et retraites nettes": pensionsNettes,
+    "Rentes viagères à titre onéreux (fraction imposable)": rentesNettes,
+    "Revenus de capitaux mobiliers (barème)": rcmBareme,
+    "Plus-values et gains (barème)": pvBareme,
+    "Revenus fonciers nets": rfNet,
+    "BIC professionnels": bicPro,
+    "BIC non professionnels (locations meublées)": bicNonProNet,
+    "BNC": bnc,
+    "Bénéfices agricoles": ba_,
+  };
+  let rbg = Object.values(cats).reduce((a, b) => a + b, 0);
+  const deficitsImputes = rfDeficitRG + deficitsPro + g("6FL");
+  rbg = rbg - deficitsImputes;
+  const rbgPos = Math.max(0, rbg);
+
+  // ---------- 6. Charges déductibles ----------
+  const csgDed = g("6DE");
+  const capPA = P.pensionEnfantMajeur;
+  const pa6GI = Math.min(g("6GI"), capPA), pa6GJ = Math.min(g("6GJ"), capPA);
+  const pa6GP = Math.min(g("6GP") * P.majorationPensionAvant2006, capPA), pa6GU = g("6GU") * P.majorationPensionAvant2006;
+  const paAutres = g("6EL") + g("6EM");
+  const accueil = Math.min(g("6EU"), P.forfaitAccueil * Math.max(1, num(v["6EV"]) || 1));
+  const perPlafondA = num(v["6PS"]) || P.per.min, perPlafondB = num(v["6PT"]) || P.per.min;
+  const per = Math.min(g("6RS"), perPlafondA + num(v["6QS"])) + (couple ? Math.min(g("6RT"), perPlafondB + num(v["6QT"])) : 0) + g("6RU");
+  ["6GI", "6GJ"].forEach(c => { if (g(c) > capPA) warnings.push({ code: c, msg: `Pension alimentaire plafonnée à ${fmt(capPA)} par enfant majeur.` }); });
+  if (g("6RS") > perPlafondA + num(v["6QS"])) warnings.push({ code: "6RS", msg: `Versements PER limités au plafond disponible (${fmt(perPlafondA + num(v["6QS"]))}, case 6PS + reports).` });
+  const charges = csgDed + pa6GI + pa6GJ + pa6GP + pa6GU + paAutres + accueil + per + g("6DD");
+  const rng = Math.max(0, rbgPos - charges);
+
+  // ---------- Abattements spéciaux (art. 157 bis, 196 B) ----------
+  let nAge = 0;
+  const born1 = num(v.naissance1), born2 = num(v.naissance2);
+  if ((born1 && born1 <= P.abtAge.anneeNaissanceMax) || v.caseP) nAge++;
+  if (couple && ((born2 && born2 <= P.abtAge.anneeNaissanceMax) || v.caseF)) nAge++;
+  let abtAge = 0;
+  if (nAge && rng <= P.abtAge.seuil1) abtAge = P.abtAge.plein * nAge;
+  else if (nAge && rng <= P.abtAge.seuil2) abtAge = P.abtAge.demi * nAge;
+  const abtMarie = P.abtEnfantMarie * num(v.nbN);
+  const rni = Math.floor(Math.max(0, rng - abtAge - abtMarie));
+
+  // ---------- Impôt brut : barème, quotient, taux effectif, plafonnement QF ----------
+  const exo = g("8TI") + vlNet;                    // revenus exonérés retenus pour le taux effectif
+  const excep = Math.min(g("0XX"), rni);           // revenus exceptionnels (système du quotient, coefficient 4)
+  const ordinaire = rni - excep;
+  const ds = (x) => droitsSimples(x, qf);
+  let dsInfo;
+  let irBrut;
+  if (exo > 0) {
+    const full = ds(ordinaire + exo);
+    irBrut = full.ir * (ordinaire / (ordinaire + exo));
+    dsInfo = full;
+    log(`Taux effectif : impôt sur ${fmt(ordinaire + exo)} × ${fmt(ordinaire)} / ${fmt(ordinaire + exo)}`);
+  } else { dsInfo = ds(ordinaire); irBrut = dsInfo.ir; }
+  if (excep > 0) {
+    const base = ds(ordinaire).ir, plusQ = ds(ordinaire + excep / 4).ir;
+    irBrut += 4 * (plusQ - base);
+    log(`Système du quotient (0XX) : 4 × (impôt(${fmt(ordinaire + excep / 4)}) − impôt(${fmt(ordinaire)})) = ${fmt(4 * (plusQ - base))}`);
+  }
+  irBrut = R(irBrut);
+  const irSansPlaf = R(dsInfo.ir1 * (exo > 0 ? ordinaire / (ordinaire + exo) : 1));
+
+  // ---------- Décote ----------
+  let decote = 0;
+  const seuilDec = couple ? P.decote.seuilCouple : P.decote.seuilSeul, baseDec = couple ? P.decote.baseCouple : P.decote.baseSeul;
+  if (irBrut > 0 && irBrut < seuilDec) decote = R(Math.min(irBrut, Math.max(0, baseDec - P.decote.taux * irBrut)));
+  const irApresDecote = irBrut - decote;
+
+  // ---------- Réduction DOM (CGI 197 I-3) ----------
+  let redDOM = 0;
+  if (v.residence === "GMR") redDOM = Math.min(R(irApresDecote * P.dom.GMR.taux), P.dom.GMR.plafond);
+  else if (v.residence === "GY") redDOM = Math.min(R(irApresDecote * P.dom.GY.taux), P.dom.GY.plafond);
+  const irAvantReductions = irApresDecote - redDOM;
+
+  // ---------- 7. Réductions d'impôt ----------
+  const ri = P.ri, reductions = [], plafonnees10 = [], plafonnees18 = [];
+  const addRI = (label, amount, cap) => { amount = R(Math.max(0, amount)); if (amount) { reductions.push([label, amount]); if (cap === 10) plafonnees10.push(amount); if (cap === 18) plafonnees18.push(amount); } };
+  // Dons
+  const d75 = Math.min(g("7UD"), ri.dons75.plafond);
+  const dons66Base = Math.max(0, g("7UD") - ri.dons75.plafond) + g("7UF") + Math.min(g("7UH"), ri.donsPartis.plafond) + g("7XS") + g("7XT") + g("7XU") + g("7XW") + g("7XY");
+  const capDons = rni * ri.dons66.partRevenu;
+  const d66 = Math.min(dons66Base, capDons);
+  if (dons66Base > capDons) warnings.push({ code: "7UF", msg: `Dons retenus dans la limite de 20 % du revenu imposable (${fmt(capDons)}) ; l'excédent (${fmt(dons66Base - capDons)}) est reportable 5 ans.` });
+  addRI("Dons aux organismes d'aide aux personnes en difficulté (75 %)", d75 * ri.dons75.taux);
+  addRI("Dons aux œuvres, partis, reports (66 %)", d66 * ri.dons66.taux);
+  addRI("Dons pour le patrimoine religieux (75 %)", Math.min(g("7UJ"), ri.patrimoine.plafond) * ri.patrimoine.taux);
+  // Scolarité
+  let scol = 0; for (const c in ri.scolarite) scol += num(v[c]) * ri.scolarite[c];
+  addRI("Frais de scolarité des enfants", scol);
+  // Prestations compensatoires
+  const wn = g("7WN"), wo = g("7WO");
+  if (wn > 0) { const capPC = wo > wn ? ri.prestComp.plafond * wn / wo : ri.prestComp.plafond; addRI("Prestations compensatoires (25 %)", Math.min(wn, capPC) * ri.prestComp.taux); }
+  // Dépendance / EHPAD
+  addRI("Dépenses d'accueil en établissement pour personnes dépendantes (25 %)", (Math.min(g("7CD"), ri.dependance.plafond) + Math.min(g("7CE"), ri.dependance.plafond)) * ri.dependance.taux);
+  // PME / JEI
+  const pmeCap = couple ? ri.pmePlafond.couple : ri.pmePlafond.seul;
+  const pmeBase = Math.min(g("7CF") + g("7CH"), pmeCap);
+  const partCH = g("7CF") + g("7CH") > 0 ? g("7CH") / (g("7CF") + g("7CH")) : 0;
+  addRI("Souscription au capital de PME / ESUS", pmeBase * ((1 - partCH) * ri.pme["7CF"] + partCH * ri.pme["7CH"]), 10);
+  addRI("Souscription au capital de JEI (30 %)", Math.min(g("7CI"), couple ? ri.jeiPlafond.couple : ri.jeiPlafond.seul) * ri.pme["7CI"], 10);
+  addRI("Souscription au capital de JEI de rupture (50 %)", Math.min(g("7CJ"), couple ? ri.jeirPlafond.couple : ri.jeirPlafond.seul) * ri.pme["7CJ"], 10);
+  const fcpiCap = couple ? ri.fcpiPlafond.couple : ri.fcpiPlafond.seul;
+  addRI("FCPI (18 % / 25 %)", Math.min(g("7GQ"), fcpiCap) * ri.fcpi["7GQ"] + Math.min(g("7GR"), Math.max(0, fcpiCap - Math.min(g("7GQ"), fcpiCap))) * ri.fcpi["7GR"], 10);
+  addRI("FIP Corse (30 %)", Math.min(g("7FM"), fcpiCap) * ri.fcpi["7FM"], 10);
+  addRI("FIP outre-mer (30 %)", Math.min(g("7FL"), fcpiCap) * ri.fcpi["7FL"], 10);
+  // Sofica
+  let soficaBase = Math.min(g("7FN") + g("7GN") + g("7EN"), ri.soficaPlafond, rng * ri.soficaPartRNG);
+  const soficaTot = g("7FN") + g("7GN") + g("7EN");
+  if (soficaTot > 0) { const r = (g("7FN") * ri.sofica["7FN"] + g("7GN") * ri.sofica["7GN"] + g("7EN") * ri.sofica["7EN"]) / soficaTot; addRI("Sofica", soficaBase * r, 18); }
+  // Forêts
+  addRI("Investissements forestiers (25 %)", Math.min(g("7UN"), couple ? ri.forets.plafond.couple : ri.forets.plafond.seul) * ri.forets.taux, 10);
+  // Montants directs (dispositifs à taux multiples : Pinel, Denormandie, Scellier, Duflot, Malraux, Loc'Avantages, Girardin…)
+  addRI("Investissements locatifs (Pinel, Denormandie, Scellier, Duflot, Loc'Avantages…)", g("RI_LOC"), 10);
+  addRI("Investissements outre-mer (Girardin)", g("RI_OM"), 18);
+  addRI("Malraux et autres réductions non plafonnées", g("RI_AUTRE"));
+  const totalRI = reductions.reduce((a, b) => a + b[1], 0);
+  const riImputee = Math.min(totalRI, Math.max(0, irAvantReductions));
+  const irApresRI = Math.max(0, irAvantReductions - totalRI);
+
+  // ---------- Crédits d'impôt ----------
+  const credits = [];
+  const addCI = (label, amount, cap) => { amount = R(Math.max(0, amount)); if (amount) { credits.push([label, amount]); if (cap === 10) plafonnees10.push(amount); if (cap === 18) plafonnees18.push(amount); } };
+  // Emploi à domicile
+  const dbNet = Math.max(0, g("7DB") - g("7DR"));
+  if (dbNet > 0) {
+    let cap;
+    if (v["7DG"]) cap = ri.domicile.invalide;
+    else {
+      const maj = ri.domicile.majoration * (num(v.nbF) + num(v.nbJ) + num(v.nbR) + num(v["7DL"]) + (born1 && born1 <= P.abtAge.anneeNaissanceMax ? 1 : 0) + (couple && born2 && born2 <= P.abtAge.anneeNaissanceMax ? 1 : 0)) + ri.domicile.majorationAlternee * num(v.nbH);
+      cap = v["7DQ"] ? Math.min(ri.domicile.premiereAnnee + maj, ri.domicile.premiereAnneeMax) : Math.min(ri.domicile.base + maj, ri.domicile.max);
+    }
+    if (dbNet > cap) warnings.push({ code: "7DB", msg: `Dépenses d'emploi à domicile retenues dans la limite de ${fmt(cap)} (plafond calculé selon votre situation).` });
+    addCI("Emploi d'un salarié à domicile (50 %)", Math.min(dbNet, cap) * ri.domicile.taux, 10);
+  }
+  // Garde d'enfants
+  let garde = 0;
+  ["7GA", "7GB", "7GC"].forEach(c => { garde += Math.min(g(c), ri.garde.plafond); if (g(c) > ri.garde.plafond) warnings.push({ code: c, msg: `Frais de garde plafonnés à ${fmt(ri.garde.plafond)} par enfant.` }); });
+  ["7GE", "7GF", "7GG"].forEach(c => { garde += Math.min(g(c), ri.garde.plafondAlternee); if (g(c) > ri.garde.plafondAlternee) warnings.push({ code: c, msg: `Frais de garde plafonnés à ${fmt(ri.garde.plafondAlternee)} par enfant en résidence alternée.` }); });
+  addCI("Frais de garde des enfants de moins de 6 ans (50 %)", garde * ri.garde.taux, 10);
+  // Syndicat
+  const syndBase = (v.frA ? 0 : g("7AC")) + (couple && !v.frB ? g("7AE") : 0) + (v.frC ? 0 : g("7AG"));
+  addCI("Cotisations syndicales (66 %)", syndBase * ri.syndicat);
+  if ((v.frA && g("7AC")) || (v.frB && g("7AE"))) warnings.push({ code: "7AC", msg: "Les cotisations syndicales n'ouvrent pas droit au crédit d'impôt lorsque l'option pour les frais réels est exercée (elles sont alors incluses dans les frais réels)." });
+  // Bornes, aide aux personnes, risques technologiques
+  addCI("Bornes de recharge de véhicules électriques (75 %)", Math.min(g("7ZQ") * ri.bornes.taux, ri.bornes.plafond * Math.max(1, num(v["7ZQn"]) || 1)));
+  const aidePlaf = (couple ? ri.aidePersonnes.plafond.couple : ri.aidePersonnes.plafond.seul) + ri.aidePersonnes.parPAC * qf.nbPAC;
+  addCI("Équipements pour personnes âgées ou handicapées (25 %)", Math.min(g("7WJ"), aidePlaf) * ri.aidePersonnes.taux);
+  addCI("Travaux de prévention des risques technologiques (40 %)", Math.min(g("7WL"), ri.risquesTechno.plafond) * ri.risquesTechno.taux);
+  // Crédits liés aux revenus mobiliers / étrangers
+  addCI("Prélèvement forfaitaire non libératoire déjà versé (2CK)", g("2CK"));
+  addCI("Crédit d'impôt sur revenus de valeurs mobilières étrangères (2AB)", g("2AB"));
+  addCI("Crédit d'impôt égal à l'impôt étranger (8VL)", g("8VL"));
+  if (g("8TK") > 0 && rni > 0) addCI("Crédit d'impôt égal à l'impôt français sur les revenus étrangers (8TK)", irApresRI * Math.min(1, g("8TK") / rni));
+  addCI("Autres crédits d'impôt", g("CI_AUTRE"));
+  const totalCI = credits.reduce((a, b) => a + b[1], 0);
+
+  // ---------- Plafonnement global des avantages fiscaux (CGI 200-0 A) ----------
+  const a10 = plafonnees10.reduce((a, b) => a + b, 0), a18 = plafonnees18.reduce((a, b) => a + b, 0);
+  const excesNiches = Math.max(0, a10 - ri.plafondNiches) + Math.max(0, Math.min(a10, ri.plafondNiches) + a18 - ri.plafondNiches18);
+
+  // ---------- RFR ----------
+  const rfr = rni + abtDiv + rcmPFU + ww + (optBareme ? 0 : pvNette) + abtPV + g("3VZ") + heuresSupExo + g("8TI") + per + g("2DH") + g("2EE") + vlNet + g("8TK") * 0;
+
+  // ---------- CEHR (CGI 223 sexies) ----------
+  const k = couple ? 2 : 1;
+  let cehr = 0;
+  if (rfr > P.cehr.seuil1 * k) cehr += (Math.min(rfr, P.cehr.seuil2 * k) - P.cehr.seuil1 * k) * P.cehr.taux1;
+  if (rfr > P.cehr.seuil2 * k) cehr += (rfr - P.cehr.seuil2 * k) * P.cehr.taux2;
+  cehr = R(cehr);
+
+  // ---------- Impôt net ----------
+  let irAvantCredits = irApresRI + impotPFU + excesNiches;
+  const sousSeuil = irAvantCredits > 0 && irAvantCredits < P.seuilRecouvrement;
+  if (sousSeuil) irAvantCredits = 0;
+  const irNet = irAvantCredits - totalCI;   // négatif = restitution
+
+  // ---------- CDHR (CGI 224) ----------
+  let cdhr = 0, cdhrDetail = null;
+  const seuilCD = P.cdhr.seuil * k, seuilDecCD = P.cdhr.seuilDecote * k;
+  if (rfr > seuilCD) {
+    let cible = rfr * P.cdhr.taux;
+    if (rfr <= seuilDecCD) cible = Math.min(cible, P.cdhr.tauxDecote * (rfr - seuilCD));
+    const impots = irApresRI + impotPFU + cehr + (couple ? P.cdhr.majCouple : 0) + P.cdhr.majPAC * qf.nbPAC + g("2DH") * P.avTaux;
+    cdhr = R(Math.max(0, cible - impots));
+    cdhrDetail = { cible: R(cible), impots: R(impots) };
+  }
+
+  // ---------- Prélèvements sociaux sur les revenus du patrimoine ----------
+  const psBaseBareme = rfNet + rentesNettes + bicNonProNet + (optBareme ? rcmTotal - g("2BH") - ch - ww - zz + pvNette : 0);
+  const psBase = rfNet + rentesNettes + bicNonProNet + g("2CG") + pvNette + (optBareme ? 0 : 0);
+  let ps = R(psBase * P.ps.taux);
+  if (ps > 0 && ps < P.seuilRecouvrement) ps = 0;
+  const csgDeductibleProchaine = R((rfNet + rentesNettes + bicNonProNet + (optBareme ? g("2BH") + g("2CG") + pvNette : 0)) * P.ps.csgDeductible);
+
+  // ---------- Solde ----------
+  const pasVerse = g("8HV") + g("8IV") + g("8HW") + g("8IW") + g("8HX") + g("8IX") + g("8HY") + g("8HZ") + g("8HU");
+  const acompteCDHR = g("CDHR_AC");
+  const totalImpots = irNet + cehr + cdhr + ps;
+  const solde = totalImpots - pasVerse - acompteCDHR;
+
+  // ---------- Validation ----------
+  if (!v.situation) errors.push({ code: "situation", msg: "Indiquez votre situation de famille au 31 décembre 2025." });
+  if (!born1) errors.push({ code: "naissance1", msg: "Indiquez l'année de naissance du déclarant 1 (nécessaire pour l'abattement des plus de 65 ans)." });
+  if (couple && !born2) errors.push({ code: "naissance2", msg: "Indiquez l'année de naissance du déclarant 2." });
+  if (num(v.nbG) > num(v.nbF)) errors.push({ code: "nbG", msg: "Le nombre d'enfants invalides (G) ne peut pas dépasser le nombre d'enfants à charge (F)." });
+  if (num(v.nbI) > num(v.nbH)) errors.push({ code: "nbI", msg: "Le nombre d'enfants invalides en résidence alternée (I) ne peut pas dépasser H." });
+  if (v.caseP && v.caseW) warnings.push({ code: "caseW", msg: "Les cases P et W ne se cumulent pas pour une même personne : une seule demi-part est retenue." });
+  if (v.caseT && (couple || qf.veuf)) warnings.push({ code: "caseT", msg: "La case T (parent isolé) est réservée aux personnes célibataires, divorcées ou séparées vivant seules." });
+  if (v.caseT && !couple && !qf.veuf && qf.nDep === 0) warnings.push({ code: "caseT", msg: "La case T suppose au moins une personne à charge." });
+  if (v.caseL && qf.nDep > 0) warnings.push({ code: "caseL", msg: "La case L n'est accordée qu'en l'absence de personne à charge." });
+  if (g("7UD") > ri.dons75.plafond) warnings.push({ code: "7UD", msg: `Au-delà de ${fmt(ri.dons75.plafond)}, l'excédent des dons 7UD est retenu au taux de 66 % (comme en 7UF).` });
+  if (g("0XX") > rni) warnings.push({ code: "0XX", msg: "Les revenus exceptionnels ne peuvent pas dépasser le revenu net imposable." });
+
+  // Comparaison PFU / barème (l'administration signale l'option la plus favorable)
+  let conseilOption = null;
+  if (rcmTotal + pvNette > 0 && !v.__noCompare) {
+    const alt = compute(Object.assign({}, v, { "2OP": !optBareme, __noCompare: true }));
+    const diff = alt.solde - solde;
+    conseilOption = { optBareme, diff };
+  }
+
+  const tauxMarginal = tmi(rni / qf.parts);
+  const tauxMoyen = rni > 0 ? Math.max(0, irNet) / rni : 0;
+  const plafondPER = clamp((salairesNets + pensionsNettes * 0 + bicPro + bnc + ba_) * 0.10, P.per.min, P.per.max);
+
+  return {
+    qf, couple, cats, salDetail, salairesBruts, dedSalaires, salairesNets, pensionsBrutes, dedPensions, pensionsNettes, rentesNettes, heuresSupExo,
+    optBareme, rcmBareme, rcmPFU, abtDiv, abtAV: abtAV - restAbt, pvNette, abtPV, pvBareme, impotPFU,
+    rfNet, rfDeficitRG, bicPro, bicNonProNet, bnc, ba: ba_, deficitsPro, deficitsImputes, vlNet, vlBrut,
+    rbg, rbgPos, charges, csgDed, per, rng, abtAge, nAge, abtMarie, rni, exo, excep,
+    irBrut, irSansPlaf, dsInfo, decote, irApresDecote, redDOM, irAvantReductions, reductions, totalRI, riImputee, irApresRI,
+    credits, totalCI, a10, a18, excesNiches, rfr, cehr, cdhr, cdhrDetail, irAvantCredits, sousSeuil, irNet,
+    psBase, ps, csgDeductibleProchaine, pasVerse, acompteCDHR, totalImpots, solde, warnings, errors, conseilOption,
+    tauxMarginal, tauxMoyen, plafondPER, trace: t
+  };
+}
+// ===ENGINE END===
+</script>
+<script>
+// ===================== Définition du formulaire =====================
+const P1 = ["Déclarant 1", "Déclarant 2", "Personnes à charge"];
+const isCouple = (c) => c.couple, isSingle = (c) => !c.couple, isVeuf = (c) => c.v.situation === "V";
+const SECTIONS = [
+  { id: "foyer", n: "0", title: "Situation du foyer fiscal", form: "2042 p. 1-2", intro: "Situation au 31 décembre 2025. Les demi-parts et le plafonnement du quotient familial sont calculés automatiquement.", rows: [
+    { type: "select", code: "situation", label: "Situation de famille", required: true, options: [["", "— choisir —"], ["M", "Marié(e)"], ["O", "Pacsé(e)"], ["C", "Célibataire"], ["D", "Divorcé(e) / séparé(e)"], ["V", "Veuf(ve)"]] },
+    { type: "int", code: "naissance1", label: "Année de naissance du déclarant 1", required: true, hint: "Né(e) en 1960 ou avant : abattement « personnes âgées » sous condition de revenu." },
+    { type: "int", code: "naissance2", label: "Année de naissance du déclarant 2", required: true, show: isCouple },
+    { type: "select", code: "residence", label: "Lieu de résidence", options: [["FR", "Métropole / Corse"], ["GMR", "Guadeloupe, Martinique, La Réunion (réduction 30 %)"], ["GY", "Guyane, Mayotte (réduction 40 %)"]] },
+    { type: "group", label: "Demi-parts supplémentaires" },
+    { type: "check", code: "caseP", label: "Déclarant 1 : carte mobilité inclusion « invalidité » ou pension d'invalidité ≥ 40 % (P)" },
+    { type: "check", code: "caseF", label: "Déclarant 2 : carte mobilité inclusion « invalidité » ou pension d'invalidité ≥ 40 % (F)", show: isCouple },
+    { type: "check", code: "caseW", label: "Ancien combattant de plus de 74 ans (ou conjoint) (W)", hint: "Ne se cumule pas avec P/F pour la même personne." },
+    { type: "check", code: "caseS", label: "Veuf(ve) de plus de 74 ans dont le conjoint décédé bénéficiait de la demi-part ancien combattant (S)", show: isVeuf },
+    { type: "check", code: "caseG", label: "Titulaire d'une pension de veuve de guerre (G)", show: isSingle },
+    { type: "check", code: "caseL", label: "Vous vivez seul(e), sans personne à charge, et avez élevé seul(e) un enfant pendant au moins 5 ans (L)", show: (c) => !c.couple && c.nDep === 0, hint: "Demi-part plafonnée à 1 079 €." },
+    { type: "check", code: "caseT", label: "Parent isolé : vous vivez seul(e) avec vos enfants ou personnes à charge (T)", show: (c) => (c.v.situation === "C" || c.v.situation === "D") && c.nDep > 0, hint: "Part entière pour le premier enfant, plafonnée à 4 262 €." },
+    { type: "group", label: "Personnes à charge" },
+    { type: "int", code: "nbF", label: "Enfants mineurs ou handicapés à charge exclusive (F)" },
+    { type: "int", code: "nbG", label: "… dont titulaires de la carte mobilité inclusion « invalidité » (G)", show: (c) => num(c.v.nbF) > 0 },
+    { type: "int", code: "nbH", label: "Enfants en résidence alternée (H)", hint: "Un quart de part par enfant (moitié de l'avantage)." },
+    { type: "int", code: "nbI", label: "… dont titulaires de la carte « invalidité » (I)", show: (c) => num(c.v.nbH) > 0 },
+    { type: "int", code: "nbJ", label: "Enfants majeurs célibataires rattachés (J)", hint: "Leurs revenus sont à saisir dans la colonne « Personnes à charge »." },
+    { type: "int", code: "nbN", label: "Enfants mariés / pacsés ou chargés de famille rattachés : nombre total de personnes (N)", hint: "Abattement de 6 855 € par personne rattachée (enfant, conjoint, petits-enfants) au lieu d'une demi-part." },
+    { type: "int", code: "nbR", label: "Personnes invalides vivant sous votre toit (R)", hint: "Comptent comme une personne à charge, plus une demi-part d'invalidité." },
+  ]},
+  { id: "s1", n: "1", title: "Traitements, salaires, pensions et rentes", form: "2042 p. 3", persons: true, intro: "Montants nets imposables tels qu'ils figurent sur la déclaration (avant la déduction de 10 %).", rows: [
+    { type: "money", codes: ["1AJ", "1BJ", "1CJ"], label: "Traitements, salaires, revenus d'activité", hint: "Déduction forfaitaire de 10 % (min. 509 €, max. 14 555 € par personne) ou frais réels." },
+    { type: "money", codes: ["1AP", "1BP", "1CP"], label: "Allocations chômage, préretraite" },
+    { type: "check", codes: ["frA", "frB", "frC"], label: "Option pour la déduction des frais réels" },
+    { type: "money", codes: ["1AK", "1BK", "1CK"], label: "Montant des frais réels", show: (c) => c.v.frA || c.v.frB || c.v.frC, hint: "Remplace la déduction de 10 % pour la personne concernée." },
+    { type: "money", codes: ["1GH", "1HH", "1IH"], label: "Heures supplémentaires et complémentaires exonérées", hint: "Exonérées d'impôt (jusqu'à 7 500 €) mais retenues dans le revenu fiscal de référence." },
+    { type: "group", label: "Pensions, retraites et rentes" },
+    { type: "money", codes: ["1AS", "1BS", "1CS"], label: "Pensions, retraites, rentes à titre gratuit", hint: "Déduction de 10 % (min. 454 € par personne, max. 4 439 € par foyer)." },
+    { type: "money", codes: ["1AZ", "1BZ", "1CZ"], label: "Pensions d'invalidité" },
+    { type: "money", codes: ["1AO", "1BO", "1CO"], label: "Pensions alimentaires perçues" },
+    { type: "group", label: "Rentes viagères à titre onéreux (âge du crédirentier lors de l'entrée en jouissance)" },
+    { type: "money", code: "1AW", label: "Moins de 50 ans (fraction imposable 70 %)" },
+    { type: "money", code: "1BW", label: "De 50 à 59 ans (50 %)" },
+    { type: "money", code: "1CW", label: "De 60 à 69 ans (40 %)" },
+    { type: "money", code: "1DW", label: "70 ans et plus (30 %)" },
+  ]},
+  { id: "s2", n: "2", title: "Revenus de capitaux mobiliers", form: "2042 p. 3", intro: "Par défaut, ces revenus sont soumis au prélèvement forfaitaire unique de 12,8 % (plus 17,2 % de prélèvements sociaux prélevés à la source). L'option 2OP soumet l'ensemble des revenus mobiliers et plus-values au barème progressif.", rows: [
+    { type: "check", code: "2OP", label: "Option globale pour l'imposition au barème progressif (2OP)", hint: "Ouvre l'abattement de 40 % sur les dividendes, la déduction des frais et la CSG déductible ; supprime le PFU." },
+    { type: "money", code: "2DC", label: "Revenus des actions et parts (dividendes) éligibles à l'abattement de 40 %" },
+    { type: "money", code: "2FU", label: "Revenus imposables des titres non cotés détenus dans un PEA" },
+    { type: "money", code: "2TS", label: "Revenus distribués non éligibles à l'abattement de 40 %" },
+    { type: "money", code: "2TR", label: "Intérêts et autres produits de placement à revenu fixe" },
+    { type: "money", code: "2TT", label: "Intérêts des prêts participatifs et minibons" },
+    { type: "money", code: "2GO", label: "Revenus réputés distribués et revenus des structures soumises hors de France à un régime fiscal privilégié" },
+    { type: "group", label: "Assurance-vie et contrats de capitalisation" },
+    { type: "money", code: "2CH", label: "Produits des contrats de plus de 8 ans – primes versées avant le 27/09/2017 (barème après abattement)", hint: "Abattement de 4 600 € (9 200 € pour un couple) sur les produits des contrats de plus de 8 ans." },
+    { type: "money", code: "2VV", label: "Produits des contrats de moins de 8 ans – primes versées depuis le 27/09/2017 (12,8 %)" },
+    { type: "money", code: "2WW", label: "Produits des contrats de plus de 8 ans – primes ≤ 150 000 € (7,5 %)" },
+    { type: "money", code: "2ZZ", label: "Produits des contrats de plus de 8 ans – primes > 150 000 € (12,8 %)" },
+    { type: "money", code: "2DH", label: "Produits déjà soumis au prélèvement libératoire de 7,5 % (retenus pour le RFR)" },
+    { type: "money", code: "2EE", label: "Autres produits soumis à un prélèvement libératoire (retenus pour le RFR)" },
+    { type: "group", label: "Frais, prélèvements déjà effectués et crédits" },
+    { type: "money", code: "2CA", label: "Frais et charges déductibles", show: (c) => !!c.v["2OP"] },
+    { type: "money", code: "2BH", label: "Revenus déjà soumis aux prélèvements sociaux (avec CSG déductible en cas d'option barème)", hint: "Généralement égal au total des revenus versés par des établissements français." },
+    { type: "money", code: "2CG", label: "Revenus déjà soumis aux prélèvements sociaux sans CSG déductible / ou non encore soumis", hint: "Les revenus non encore soumis aux prélèvements sociaux (banques étrangères) sont taxés à 17,2 % sur l'avis." },
+    { type: "money", code: "2CK", label: "Prélèvement forfaitaire non libératoire déjà versé (crédit d'impôt)", hint: "12,8 % retenus à la source par votre banque, restitués sous forme de crédit d'impôt." },
+    { type: "money", code: "2AB", label: "Crédit d'impôt sur revenus de valeurs mobilières étrangères" },
+  ]},
+  { id: "s3", n: "3", title: "Plus-values et gains divers", form: "2042 / 2042-C p. 3", rows: [
+    { type: "money", code: "3VG", label: "Plus-values nettes de cession de valeurs mobilières, droits sociaux et gains assimilés", hint: "Après imputation des moins-values des années antérieures." },
+    { type: "money", code: "3VH", label: "Moins-values de l'année 2025", hint: "Imputées sur les plus-values de l'année ; le surplus est reportable 10 ans." },
+    { type: "money", code: "3SG", label: "Abattement pour durée de détention de droit commun (50 % / 65 %)", show: (c) => !!c.v["2OP"], hint: "Titres acquis avant 2018, uniquement en cas d'option pour le barème." },
+    { type: "money", code: "3SL", label: "Abattement pour durée de détention renforcé (50 % / 65 % / 85 %)", show: (c) => !!c.v["2OP"] },
+    { type: "money", code: "3TZ", label: "Gains d'acquisition d'actions gratuites (imposés au barème)" },
+    { type: "money", code: "3VZ", label: "Plus-values immobilières déjà imposées chez le notaire (retenues pour le RFR)" },
+  ]},
+  { id: "s4", n: "4", title: "Revenus fonciers", form: "2042 p. 3 / 2044", rows: [
+    { type: "radio", code: "regimeFoncier", label: "Régime d'imposition", options: [["micro", "Micro-foncier (recettes ≤ 15 000 €, abattement 30 %)"], ["reel", "Régime réel (déclaration 2044)"]] },
+    { type: "money", code: "4BE", label: "Recettes brutes sans abattement (micro-foncier)", show: (c) => c.v.regimeFoncier !== "reel" },
+    { type: "money", code: "4BA", label: "Revenus fonciers nets imposables (2044, ligne 420)", show: (c) => c.v.regimeFoncier === "reel" },
+    { type: "money", code: "4BB", label: "Déficit imputable sur les revenus fonciers des années suivantes (2044, ligne 432)", show: (c) => c.v.regimeFoncier === "reel", hint: "Sans effet sur l'impôt de cette année (report 10 ans)." },
+    { type: "money", code: "4BC", label: "Déficit imputable sur le revenu global (2044, ligne 431)", show: (c) => c.v.regimeFoncier === "reel", hint: "Limité à 10 700 € (21 400 € pour des travaux de rénovation énergétique)." },
+    { type: "check", code: "4BCenergie", label: "Le déficit provient de travaux de rénovation énergétique (plafond porté à 21 400 €)", show: (c) => c.v.regimeFoncier === "reel" && num(c.v["4BC"]) > 0 },
+    { type: "money", code: "4BD", label: "Déficits fonciers antérieurs non encore imputés (2044, ligne 451)", show: (c) => c.v.regimeFoncier === "reel" },
+  ]},
+  { id: "s5", n: "5", title: "Revenus des professions non salariées", form: "2042-C-PRO", persons: 2, intro: "BIC, BNC et bénéfices agricoles. Saisissez les recettes brutes en régime micro (l'abattement forfaitaire, minimum 305 €, est appliqué) ou le résultat en régime réel.", rows: [
+    { type: "group", label: "Régime micro-BIC" },
+    { type: "money", codes: ["5KO", "5LO"], label: "Ventes de marchandises, fourniture de logement (abattement 71 %)" },
+    { type: "money", codes: ["5KP", "5LP"], label: "Prestations de services et locations meublées professionnelles (50 %)" },
+    { type: "money", codes: ["5ND", "5OD"], label: "Locations meublées non professionnelles – longue durée (50 %)" },
+    { type: "money", codes: ["5NG", "5OG"], label: "Meublés de tourisme classés et chambres d'hôtes (50 %, plafond 77 700 €)" },
+    { type: "money", codes: ["5NW", "5OW"], label: "Meublés de tourisme non classés (30 %, plafond 15 000 €)" },
+    { type: "group", label: "Régime micro-BNC et micro-BA" },
+    { type: "money", codes: ["5HQ", "5IQ"], label: "Recettes des professions non commerciales (abattement 34 %)" },
+    { type: "money", codes: ["5XB", "5YB"], label: "Recettes agricoles – micro-BA (abattement 87 %)" },
+    { type: "group", label: "Micro-entrepreneur ayant opté pour le versement libératoire" },
+    { type: "money", codes: ["5TA", "5UA"], label: "Ventes de marchandises (impôt déjà acquitté, taux effectif)" },
+    { type: "money", codes: ["5TB", "5UB"], label: "Prestations de services BIC" },
+    { type: "money", codes: ["5TE", "5UE"], label: "Recettes BNC" },
+    { type: "group", label: "Régime réel (bénéfices et déficits)" },
+    { type: "money", codes: ["5KC", "5LC"], label: "BIC professionnels : bénéfice" },
+    { type: "money", codes: ["5KF", "5LF"], label: "BIC professionnels : déficit (imputable sur le revenu global)" },
+    { type: "money", codes: ["5NA", "5OA"], label: "Locations meublées non professionnelles : bénéfice" },
+    { type: "money", codes: ["5NY", "5OY"], label: "Locations meublées non professionnelles : déficit (imputable sur les seuls bénéfices de même nature)" },
+    { type: "money", codes: ["5QC", "5RC"], label: "BNC professionnels : bénéfice" },
+    { type: "money", codes: ["5QE", "5RE"], label: "BNC professionnels : déficit" },
+    { type: "money", codes: ["5HC", "5IC"], label: "Bénéfices agricoles (régime réel) : bénéfice" },
+    { type: "money", codes: ["5HF", "5IF"], label: "Bénéfices agricoles : déficit" },
+  ]},
+  { id: "s6", n: "6", title: "Charges déductibles du revenu global", form: "2042 p. 4", rows: [
+    { type: "money", code: "6DE", label: "CSG déductible calculée sur les revenus du patrimoine (pré-remplie)" },
+    { type: "group", label: "Pensions alimentaires versées" },
+    { type: "money", code: "6GI", label: "Pension à un enfant majeur – 1er enfant (plafond 6 855 €)" },
+    { type: "money", code: "6GJ", label: "Pension à un enfant majeur – 2e enfant (plafond 6 855 €)" },
+    { type: "money", code: "6GP", label: "Pension à un enfant majeur fixée par décision de justice avant 2006 (majorée de 25 %)" },
+    { type: "money", code: "6EL", label: "Autres pensions alimentaires : enfants mineurs, ascendants, ex-conjoint – 1re personne" },
+    { type: "money", code: "6EM", label: "Autres pensions alimentaires – 2e personne" },
+    { type: "money", code: "6GU", label: "Autres pensions fixées par décision de justice avant 2006 (majorées de 25 %)" },
+    { type: "group", label: "Autres charges" },
+    { type: "money", code: "6EU", label: "Frais d'accueil sous votre toit de personnes de plus de 75 ans (4 039 € par personne)" },
+    { type: "int", code: "6EV", label: "Nombre de personnes de plus de 75 ans accueillies", show: (c) => num(c.v["6EU"]) > 0 },
+    { type: "money", code: "6DD", label: "Déductions diverses (rachats de cotisations, versements aux monuments historiques…)" },
+    { type: "money", code: "6FL", label: "Déficits globaux des années antérieures non encore déduits" },
+    { type: "group", label: "Épargne retraite (PER, PERP, Préfon, COREM…)" },
+    { type: "money", codes: ["6RS", "6RT", "6RU"], label: "Cotisations et versements déductibles" },
+    { type: "money", codes: ["6PS", "6PT"], label: "Plafond de déduction 2025 (figure sur votre avis ; à défaut 4 710 €)", hint: "10 % des revenus d'activité 2024, entre 4 710 € et 37 680 €." },
+    { type: "money", codes: ["6QS", "6QT"], label: "Plafonds non utilisés des années 2022 à 2024" },
+  ]},
+  { id: "s7", n: "7", title: "Réductions et crédits d'impôt", form: "2042-RICI / 2042-C", rows: [
+    { type: "group", label: "Dons" },
+    { type: "money", code: "7UD", label: "Dons aux organismes d'aide aux personnes en difficulté (75 % jusqu'à 1 000 €)" },
+    { type: "money", code: "7UF", label: "Autres dons aux organismes d'intérêt général (66 %, dans la limite de 20 % du revenu imposable)" },
+    { type: "money", code: "7UH", label: "Dons et cotisations aux partis politiques (66 %, plafond 15 000 €)" },
+    { type: "money", code: "7UJ", label: "Dons pour la sauvegarde du patrimoine religieux – Fondation du patrimoine (75 % jusqu'à 1 000 €)" },
+    { type: "money", code: "7XS", label: "Reports de dons des années antérieures (7XS à 7XY)" },
+    { type: "group", label: "Enfants" },
+    { type: "int", code: "7EA", label: "Enfants au collège (61 € par enfant)" },
+    { type: "int", code: "7EC", label: "Enfants au lycée (153 €)" },
+    { type: "int", code: "7EF", label: "Enfants dans l'enseignement supérieur (183 €)" },
+    { type: "int", code: "7EB", label: "Enfants au collège en résidence alternée (30,50 €)", show: (c) => num(c.v.nbH) > 0 },
+    { type: "int", code: "7ED", label: "Enfants au lycée en résidence alternée (76,50 €)", show: (c) => num(c.v.nbH) > 0 },
+    { type: "int", code: "7EG", label: "Enfants dans le supérieur en résidence alternée (91,50 €)", show: (c) => num(c.v.nbH) > 0 },
+    { type: "money", code: "7GA", label: "Frais de garde d'un enfant de moins de 6 ans – 1er enfant (50 %, plafond 3 500 €)" },
+    { type: "money", code: "7GB", label: "Frais de garde – 2e enfant", show: (c) => num(c.v["7GA"]) > 0 },
+    { type: "money", code: "7GC", label: "Frais de garde – 3e enfant", show: (c) => num(c.v["7GB"]) > 0 },
+    { type: "money", code: "7GE", label: "Frais de garde d'un enfant en résidence alternée – 1er enfant (plafond 1 750 €)", show: (c) => num(c.v.nbH) > 0 },
+    { type: "money", code: "7GF", label: "Frais de garde en résidence alternée – 2e enfant", show: (c) => num(c.v.nbH) > 0 && num(c.v["7GE"]) > 0 },
+    { type: "money", code: "7GG", label: "Frais de garde en résidence alternée – 3e enfant", show: (c) => num(c.v.nbH) > 0 && num(c.v["7GF"]) > 0 },
+    { type: "group", label: "Emploi d'un salarié à domicile (crédit d'impôt 50 %)" },
+    { type: "money", code: "7DB", label: "Dépenses d'emploi à domicile (salaires + charges, ou factures de l'organisme)", hint: "Plafond 12 000 € + 1 500 € par enfant ou personne de plus de 65 ans (max. 15 000 €)." },
+    { type: "money", code: "7DR", label: "Aides perçues pour l'emploi à domicile (APA, PAJE/CMG, aide de l'employeur…)", show: (c) => num(c.v["7DB"]) > 0 },
+    { type: "check", code: "7DQ", label: "Première année d'emploi direct d'un salarié à domicile (plafond 15 000 € / 18 000 €)", show: (c) => num(c.v["7DB"]) > 0 },
+    { type: "check", code: "7DG", label: "Un membre du foyer est titulaire de la carte « invalidité » ou perçoit une pension d'invalidité de 3e catégorie (plafond 20 000 €)", show: (c) => num(c.v["7DB"]) > 0 },
+    { type: "int", code: "7DL", label: "Nombre d'ascendants de plus de 65 ans bénéficiaires de l'APA pour lesquels vous avez engagé les dépenses", show: (c) => num(c.v["7DB"]) > 0 },
+    { type: "group", label: "Autres réductions et crédits" },
+    { type: "money", codes: ["7AC", "7AE", "7AG"], label: "Cotisations syndicales (crédit d'impôt 66 %)", hint: "Non cumulable avec les frais réels." },
+    { type: "money", code: "7WN", label: "Prestations compensatoires versées en 2025 (25 %, plafond 30 500 €)" },
+    { type: "money", code: "7WO", label: "Montant total de la prestation compensatoire fixée par le jugement", show: (c) => num(c.v["7WN"]) > 0 },
+    { type: "money", code: "7CD", label: "Dépenses d'accueil dans un établissement pour personnes dépendantes – 1re personne (25 %, plafond 10 000 €)" },
+    { type: "money", code: "7CE", label: "Dépenses d'accueil en établissement – 2e personne", show: (c) => num(c.v["7CD"]) > 0 },
+    { type: "money", code: "7ZQ", label: "Dépenses d'installation de bornes de recharge pour véhicules électriques (crédit 75 %, max. 500 € par borne)" },
+    { type: "int", code: "7ZQn", label: "Nombre de bornes installées", show: (c) => num(c.v["7ZQ"]) > 0 },
+    { type: "money", code: "7WJ", label: "Dépenses d'équipements pour personnes âgées ou handicapées (crédit 25 %, plafond 5 000 € / 10 000 € sur 5 ans)" },
+    { type: "money", code: "7WL", label: "Travaux de prévention des risques technologiques (crédit 40 %, plafond 20 000 €)" },
+    { type: "group", label: "Investissements" },
+    { type: "money", code: "7CF", label: "Souscriptions au capital de PME (18 %)" },
+    { type: "money", code: "7CH", label: "Souscriptions au capital d'ESUS et de foncières solidaires (25 %)" },
+    { type: "money", code: "7CI", label: "Souscriptions au capital de jeunes entreprises innovantes – JEI (30 %)" },
+    { type: "money", code: "7CJ", label: "Souscriptions au capital de JEI de rupture (50 %)" },
+    { type: "money", code: "7GQ", label: "FCPI – versements du 1er janvier au 27 septembre 2025 (18 %)" },
+    { type: "money", code: "7GR", label: "FCPI – versements du 28 septembre au 31 décembre 2025 (25 %)" },
+    { type: "money", code: "7FM", label: "FIP Corse (30 %)" },
+    { type: "money", code: "7FL", label: "FIP outre-mer (30 %)" },
+    { type: "money", code: "7FN", label: "Sofica – taux 30 %" },
+    { type: "money", code: "7GN", label: "Sofica – taux 36 %" },
+    { type: "money", code: "7EN", label: "Sofica – taux 48 %" },
+    { type: "money", code: "7UN", label: "Investissements forestiers – acquisition (25 %)" },
+    { type: "money", code: "RI_LOC", label: "Montant annuel des réductions pour investissements locatifs (Pinel, Denormandie, Duflot, Scellier, Censi-Bouvard, Loc'Avantages)", hint: "Reportez le montant de la réduction calculé pour l'année (par ex. 2 % du prix plafonné pour un Pinel 12 ans). Soumis au plafond de 10 000 €." },
+    { type: "money", code: "RI_OM", label: "Montant des réductions pour investissements outre-mer (Girardin)", hint: "Soumis au plafond de 18 000 €." },
+    { type: "money", code: "RI_AUTRE", label: "Autres réductions d'impôt non plafonnées (Malraux, monuments historiques, mécénat…) – montant" },
+    { type: "money", code: "CI_AUTRE", label: "Autres crédits d'impôt – montant" },
+  ]},
+  { id: "s8", n: "8", title: "Divers, revenus exceptionnels, revenus étrangers et prélèvement à la source", form: "2042 p. 4 / 2042-C", persons: 2, rows: [
+    { type: "money", code: "0XX", label: "Revenus exceptionnels ou différés à imposer selon le système du quotient", hint: "Montant déjà inclus dans les revenus déclarés ci-dessus (indemnité de départ, rappel de salaires…). Le calcul applique le quotient 4." },
+    { type: "money", code: "8TI", label: "Revenus de source étrangère exonérés retenus pour le calcul du taux effectif" },
+    { type: "money", code: "8TK", label: "Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français", hint: "Montant déjà inclus dans les revenus déclarés dans les rubriques 1 à 5." },
+    { type: "money", code: "8VL", label: "Crédit d'impôt égal à l'impôt étranger (8VL / 8VM)" },
+    { type: "group", label: "Prélèvement à la source déjà versé en 2025 (pré-rempli)" },
+    { type: "money", codes: ["8HV", "8IV"], label: "Retenue à la source sur salaires, pensions, chômage" },
+    { type: "money", codes: ["8HW", "8IW"], label: "Acomptes d'impôt sur le revenu prélevés (indépendants, revenus fonciers…)" },
+    { type: "money", code: "8HY", label: "Acomptes de prélèvements sociaux prélevés" },
+    { type: "money", code: "CDHR_AC", label: "Acompte de contribution différentielle sur les hauts revenus versé en décembre 2025", show: (c) => c.rfr > 250000 },
+  ]},
+];
+
+// ===================== État et rendu =====================
+const STORE_KEY = "ir2026-revenus2025";
+let state = {};
+try { state = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; } catch (e) { state = {}; }
+if (!state.residence) state.residence = "FR";
+if (!state.regimeFoncier) state.regimeFoncier = "micro";
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rowById = {};
+
+function inputHtml(row, code, colClass) {
+  const val = state[code];
+  if (row.type === "check") return `<span class="cell ${colClass}"><input type="checkbox" data-code="${code}" ${val ? "checked" : ""}></span>`;
+  if (row.type === "int") return `<span class="cell ${colClass}"><input type="text" inputmode="numeric" data-code="${code}" value="${esc(val == null ? "" : val)}" placeholder="0" style="width:90px"></span>`;
+  return `<span class="cell ${colClass} money-wrap"><input type="text" inputmode="decimal" class="money" data-code="${code}" value="${esc(val == null ? "" : val)}" placeholder="0"></span>`;
+}
+function renderRow(row, sec) {
+  if (row.type === "group") return `<tr class="grp-row" data-row="${sec.id}-${row.label}"><td colspan="2"><div class="grp">${esc(row.label)}</div></td></tr>`;
+  const codes = row.codes || [row.code];
+  const key = codes[0];
+  rowById[key] = row; codes.forEach(c => rowById[c] = row);
+  let inputs = "";
+  if (row.type === "select") inputs = `<select data-code="${row.code}">${row.options.map(([v, l]) => `<option value="${v}" ${state[row.code] === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  else if (row.type === "radio") inputs = `<div class="radio-row">${row.options.map(([v, l]) => `<label><input type="radio" name="${row.code}" data-code="${row.code}" value="${v}" ${state[row.code] === v ? "checked" : ""}> ${esc(l)}</label>`).join("")}</div>`;
+  else if (row.codes) inputs = codes.map((c, i) => inputHtml(row, c, ["cD1", "cD2", "cPAC"][i])).join("");
+  else inputs = inputHtml(row, row.code, "");
+  const codeTags = codes.map(c => /^[0-9][A-Z]{2}$/.test(c) ? `<span class="code">${c}</span>` : "").join("");
+  return `<tr id="row-${key}" data-key="${key}"><td class="lbl">${codeTags}<span class="l">${esc(row.label)}${row.required ? ' <span style="color:var(--bad)">*</span>' : ""}</span>${row.hint ? `<span class="h">${esc(row.hint)}</span>` : ""}<span class="w"></span><span class="e"></span></td><td class="in">${inputs}</td></tr>`;
+}
+function renderForm() {
+  const main = document.getElementById("main"), nav = document.getElementById("sideNav");
+  main.innerHTML = SECTIONS.map(sec => {
+    const head = sec.persons ? `<tr><th></th><th><span class="cD1">Déclarant 1</span> <span class="cD2">Déclarant 2</span> ${sec.persons === true ? '<span class="cPAC">Pers. à charge</span>' : ""}</th></tr>` : "";
+    return `<section class="card" id="sec-${sec.id}"><h2><span class="tw">▼</span>${sec.n ? `<span class="code">${sec.n}</span>` : ""}${esc(sec.title)}<span class="form">${esc(sec.form)}</span></h2><div class="body">${sec.intro ? `<p class="intro">${esc(sec.intro)}</p>` : ""}<table class="fields">${head}${sec.rows.map(r => renderRow(r, sec)).join("")}</table></div></section>`;
+  }).join("");
+  nav.innerHTML = SECTIONS.map(sec => `<a href="#sec-${sec.id}" data-sec="${sec.id}"><span class="n">${sec.n || "•"}</span>${esc(sec.title)}</a>`).join("");
+  main.addEventListener("input", onInput);
+  main.addEventListener("change", onInput);
+  main.querySelectorAll("section.card>h2").forEach(h => h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed")));
+}
+function onInput(e) {
+  const el = e.target; if (!el.dataset || !el.dataset.code) return;
+  const code = el.dataset.code;
+  if (el.type === "checkbox") state[code] = el.checked;
+  else if (el.type === "radio") { if (el.checked) state[code] = el.value; }
+  else state[code] = el.value;
+  save(); update();
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { } }
+
+function ctxFor(v, res) {
+  const qf = quotientFamilial(v);
+  return { v, couple: qf.couple, nDep: qf.nDep, rfr: res ? res.rfr : 0 };
+}
+function update() {
+  const res = compute(state);
+  const ctx = ctxFor(state, res);
+  // visibilité des colonnes / lignes
+  document.querySelectorAll("section.card").forEach(sec => {
+    sec.classList.toggle("no-d2", !ctx.couple);
+    sec.classList.toggle("no-pac", !(num(state.nbJ) > 0 || num(state.nbF) > 0 || num(state.nbH) > 0 || num(state.nbR) > 0));
+  });
+  SECTIONS.forEach(sec => sec.rows.forEach(row => {
+    if (row.type === "group") return;
+    const key = (row.codes || [row.code])[0];
+    const tr = document.getElementById("row-" + key); if (!tr) return;
+    const visible = row.show ? !!row.show(ctx) : true;
+    tr.classList.toggle("hidden", !visible);
+    tr.querySelector(".w").textContent = ""; tr.querySelector(".e").textContent = "";
+    tr.querySelectorAll("input").forEach(i => { i.classList.remove("err", "capped"); });
+  }));
+  // messages sous les champs
+  const secOf = {}; SECTIONS.forEach(sec => sec.rows.forEach(r => (r.codes || [r.code]).forEach(c => secOf[c] = sec.id)));
+  const secErr = {}, secWarn = {};
+  res.errors.forEach(er => { const row = rowById[er.code]; const tr = row && document.getElementById("row-" + (row.codes || [row.code])[0]); if (tr) { tr.querySelector(".e").textContent = er.msg; const inp = tr.querySelector(`[data-code="${er.code}"]`); if (inp) inp.classList.add("err"); } secErr[secOf[er.code]] = true; });
+  res.warnings.forEach(w => { const row = rowById[w.code]; const tr = row && document.getElementById("row-" + (row.codes || [row.code])[0]); if (tr) { tr.querySelector(".w").textContent = w.msg; const inp = tr.querySelector(`[data-code="${w.code}"]`); if (inp) inp.classList.add("capped"); } secWarn[secOf[w.code]] = true; });
+  document.querySelectorAll("nav.side a").forEach(a => { a.classList.toggle("has-err", !!secErr[a.dataset.sec]); a.classList.toggle("has-warn", !!secWarn[a.dataset.sec] && !secErr[a.dataset.sec]); });
+  // conseil option barème sous 2OP
+  const tr2op = document.getElementById("row-2OP");
+  if (tr2op && res.conseilOption) {
+    const d = res.conseilOption.diff;
+    const k = tr2op.querySelector(".w");
+    if (Math.abs(d) >= 1) k.textContent = d > 0 ? `Votre choix actuel (${res.optBareme ? "barème" : "PFU"}) est le plus favorable : l'autre option coûterait ${fmt(d)} de plus.` : `L'option ${res.optBareme ? "PFU (décocher 2OP)" : "barème (cocher 2OP)"} serait plus favorable de ${fmt(-d)}.`;
+  }
+  renderResults(res);
+}
+
+function renderResults(r) {
+  const el = document.getElementById("results");
+  const ok = r.errors.length === 0;
+  const solde = r.solde;
+  const pill = document.getElementById("pillTotal");
+  pill.className = "pill " + (solde < 0 ? "neg" : solde > 0 ? "pos" : "");
+  pill.innerHTML = `<span class="tiny">${solde < 0 ? "À rembourser" : "Reste à payer"}</span> <b>${ok ? fmt(Math.abs(solde)) : "—"}</b>`;
+  const line = (l, v, cls = "", always = false) => `<tr class="${cls} ${(!always && Math.abs(v) < 0.5) ? "zero" : ""}"><td>${l}</td><td>${typeof v === "number" ? fmt(v) : v}</td></tr>`;
+  const sec = (l) => `<tr class="sec"><td colspan="2">${l}</td></tr>`;
+  let rows = "";
+  rows += sec("Revenus");
+  for (const k in r.cats) rows += line(k, r.cats[k]);
+  if (r.deficitsImputes) rows += line("Déficits imputés (fonciers, professionnels, antérieurs)", -r.deficitsImputes);
+  rows += line("Revenu brut global", r.rbg, "tot", true);
+  rows += line("CSG déductible", -r.csgDed);
+  rows += line("Autres charges déductibles (pensions, épargne retraite…)", -(r.charges - r.csgDed));
+  rows += line("Revenu net global", r.rng, "tot", true);
+  rows += line(`Abattement personnes âgées ou invalides${r.nAge ? " (" + r.nAge + ")" : ""}`, -r.abtAge);
+  rows += line("Abattement enfants mariés ou chargés de famille rattachés", -r.abtMarie);
+  rows += line("Revenu net imposable", r.rni, "tot", true);
+  rows += sec("Calcul de l'impôt");
+  rows += line(`Nombre de parts`, r.qf.parts.toLocaleString("fr-FR"), "", true);
+  if (r.exo) rows += line("Revenus exonérés retenus pour le taux effectif", r.exo);
+  rows += line("Impôt selon le barème (avant plafonnement)", r.irSansPlaf, "sub");
+  if (r.dsInfo.plafonne) rows += line("Effet du plafonnement du quotient familial", r.irBrut - r.irSansPlaf, "sub");
+  rows += line("Impôt brut", r.irBrut, "", true);
+  rows += line("Décote", -r.decote);
+  rows += line("Réduction d'impôt DOM", -r.redDOM);
+  r.reductions.forEach(([l, v]) => rows += line(l, -v, "sub"));
+  if (r.totalRI > r.riImputee) rows += line("Réductions d'impôt non imputables (impôt insuffisant)", r.totalRI - r.riImputee, "sub");
+  rows += line("Impôt après réductions (revenus au barème)", r.irApresRI, "", true);
+  rows += line("Impôt proportionnel (PFU 12,8 % / 7,5 %)", r.impotPFU);
+  rows += line("Reprise au titre du plafonnement global des avantages fiscaux", r.excesNiches);
+  if (r.sousSeuil) rows += line("Impôt non mis en recouvrement (inférieur à 61 €)", -(r.irApresRI + r.impotPFU + r.excesNiches), "sub");
+  r.credits.forEach(([l, v]) => rows += line(l, -v, "sub"));
+  rows += line("Impôt sur le revenu net" + (r.irNet < 0 ? " (restitution)" : ""), r.irNet, "tot", true);
+  rows += line("Contribution exceptionnelle sur les hauts revenus", r.cehr);
+  rows += line("Contribution différentielle sur les hauts revenus", r.cdhr);
+  rows += line("Prélèvements sociaux (17,2 % sur " + fmt(r.psBase) + ")", r.ps);
+  rows += line("Total des impôts et contributions", r.totalImpots, "tot", true);
+  rows += line("Prélèvement à la source déjà versé", -r.pasVerse);
+  rows += line("Acompte de CDHR déjà versé", -r.acompteCDHR);
+  rows += line(solde < 0 ? "Montant à vous rembourser" : "Montant restant à payer", Math.abs(solde), "tot", true);
+
+  const msgs = [];
+  r.errors.forEach(e => msgs.push(`<div class="msg err"><a data-goto="${e.code}">${esc(e.msg)}</a></div>`));
+  r.warnings.forEach(w => msgs.push(`<div class="msg warn"><a data-goto="${w.code}">${esc(w.msg)}</a></div>`));
+  if (r.conseilOption && Math.abs(r.conseilOption.diff) >= 1 && r.conseilOption.diff < 0) msgs.push(`<div class="msg ok">Option revenus mobiliers : ${r.optBareme ? "renoncer au barème (décocher 2OP)" : "opter pour le barème (cocher 2OP)"} réduirait votre impôt de ${fmt(-r.conseilOption.diff)}.</div>`);
+  if (ok && !msgs.length) msgs.push(`<div class="msg ok">Aucune anomalie détectée dans la saisie.</div>`);
+
+  const trace = [
+    `Parts : ${r.qf.parts} (référence ${r.qf.partsRef}) — ${r.qf.detail.join(" ; ") || "aucune majoration"}`,
+    `Plafond QF total : ${fmt(r.qf.plafond)} ; réduction complémentaire : ${fmt(r.qf.compl)}`,
+    ...r.salDetail,
+    `Pensions : ${fmt(r.pensionsBrutes)} − 10 % ${fmt(r.dedPensions)} = ${fmt(r.pensionsNettes)}`,
+    r.optBareme ? `RCM au barème : ${fmt(r.rcmBareme)} (abattement 40 % : ${fmt(r.abtDiv)}, abattement assurance-vie : ${fmt(r.abtAV)})` : `RCM au PFU : ${fmt(r.rcmPFU)} ; assurance-vie au barème : ${fmt(r.rcmBareme)} ; impôt proportionnel : ${fmt(r.impotPFU)}`,
+    `Plus-values nettes : ${fmt(r.pvNette)} (abattements : ${fmt(r.abtPV)})`,
+    `Impôt 1 (${r.qf.parts} parts) : ${fmt(r.dsInfo.ir1)} ; impôt 2 (${r.qf.partsRef} part(s)) : ${fmt(r.dsInfo.ir2)} ; plafonnement ${r.dsInfo.plafonne ? "appliqué" : "non appliqué"} → ${fmt(r.dsInfo.ir)}`,
+    ...r.trace,
+    `Décote : ${fmt(r.decote)} ; réduction DOM : ${fmt(r.redDOM)}`,
+    `Avantages plafonnés (10 000 €) : ${fmt(r.a10)} ; (18 000 €) : ${fmt(r.a18)} ; excédent repris : ${fmt(r.excesNiches)}`,
+    `RFR : ${fmt(r.rfr)} ; CEHR : ${fmt(r.cehr)}` + (r.cdhrDetail ? ` ; CDHR : cible 20 % ${fmt(r.cdhrDetail.cible)} − impôts retenus ${fmt(r.cdhrDetail.impots)} = ${fmt(r.cdhr)}` : ""),
+    `Base des prélèvements sociaux : ${fmt(r.psBase)} → ${fmt(r.ps)} ; CSG déductible l'an prochain (6DE 2026) : ${fmt(r.csgDeductibleProchaine)}`,
+  ];
+
+  el.innerHTML = `
+  <section class="card"><h3>Résultat <span class="switch"><label><input type="checkbox" id="showZero"> lignes à zéro</label></span></h3><div class="body">
+    <div class="big-l">${solde < 0 ? "Montant à vous rembourser" : "Montant restant à payer"} (après prélèvement à la source)</div>
+    <div class="big ${solde < 0 ? "neg" : solde > 0 ? "pos" : ""}">${ok ? fmt(Math.abs(solde)) : "—"}</div>
+    <div class="kpis">
+      <div class="kpi"><div class="v">${fmt(r.irNet)}</div><div class="l">Impôt sur le revenu net</div></div>
+      <div class="kpi"><div class="v">${fmt(r.ps + r.cehr + r.cdhr)}</div><div class="l">Prélèvements sociaux et contributions</div></div>
+      <div class="kpi"><div class="v">${fmt(r.rfr)}</div><div class="l">Revenu fiscal de référence</div></div>
+      <div class="kpi"><div class="v">${r.qf.parts.toLocaleString("fr-FR")}</div><div class="l">Nombre de parts</div></div>
+      <div class="kpi"><div class="v">${(r.tauxMarginal * 100).toLocaleString("fr-FR")} %</div><div class="l">Tranche marginale d'imposition</div></div>
+      <div class="kpi"><div class="v">${(r.tauxMoyen * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %</div><div class="l">Taux moyen d'imposition</div></div>
+    </div>
+  </div></section>
+  <section class="card"><h3>Vérifications</h3><div class="body msgs">${msgs.join("")}</div></section>
+  <section class="card"><h3>Détail du calcul (comme sur l'avis)</h3><div class="body"><table class="avis ${document.getElementById("showZero") && document.getElementById("showZero").checked ? "showzero" : ""}" id="avis">${rows}</table>
+    <details class="calc" id="traceBox" ${traceOpen ? "open" : ""}><summary>Trace détaillée</summary><pre class="trace">${esc(trace.join("\n"))}</pre></details>
+  </div></section>`;
+  const sz = document.getElementById("showZero"); if (sz) { sz.checked = showZeroPref; sz.addEventListener("change", () => { showZeroPref = sz.checked; document.getElementById("avis").classList.toggle("showzero", sz.checked); }); document.getElementById("avis").classList.toggle("showzero", showZeroPref); }
+  const tb = document.getElementById("traceBox"); if (tb) tb.addEventListener("toggle", () => { traceOpen = tb.open; });
+  el.querySelectorAll("[data-goto]").forEach(a => a.addEventListener("click", () => { const row = rowById[a.dataset.goto]; const tr = row && document.getElementById("row-" + (row.codes || [row.code])[0]); if (tr) { tr.closest("section").classList.remove("collapsed"); tr.scrollIntoView({ block: "center" }); const i = tr.querySelector("input,select"); if (i) i.focus(); } }));
+}
+let showZeroPref = false, traceOpen = false;
+
+// ===================== Actions =====================
+document.getElementById("btnExport").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "declaration-2026-revenus-2025.json"; a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById("btnImport").addEventListener("click", () => document.getElementById("fileImport").click());
+document.getElementById("fileImport").addEventListener("change", (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader(); rd.onload = () => { try { state = JSON.parse(rd.result) || {}; save(); renderForm(); update(); } catch (err) { alert("Fichier JSON invalide."); } }; rd.readAsText(f);
+  e.target.value = "";
+});
+document.getElementById("btnReset").addEventListener("click", () => { if (confirm("Effacer toutes les cases saisies ?")) { state = { residence: "FR", regimeFoncier: "micro" }; save(); renderForm(); update(); } });
+document.getElementById("btnTheme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { localStorage.setItem(STORE_KEY + "-theme", next); } catch (e) { }
+});
+try { const th = localStorage.getItem(STORE_KEY + "-theme"); if (th) document.documentElement.setAttribute("data-theme", th); } catch (e) { }
+
+// navigation active
+const io = ("IntersectionObserver" in window) ? new IntersectionObserver((entries) => {
+  entries.forEach(en => { if (en.isIntersecting) { document.querySelectorAll("nav.side a").forEach(a => a.classList.toggle("active", a.dataset.sec === en.target.id.replace("sec-", ""))); } });
+}, { rootMargin: "-20% 0px -70% 0px" }) : null;
+
+renderForm();
+update();
+if (io) document.querySelectorAll("section.card[id^=sec-]").forEach(s => io.observe(s));
+</script>
+</body>
+</html>
